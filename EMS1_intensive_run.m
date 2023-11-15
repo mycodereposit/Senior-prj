@@ -58,7 +58,7 @@ PARAM.battery.max = 70; %max soc userdefined int 0-100 %
 
 
 Pnet =      optimvar('Pnet',k,'LowerBound',-inf,'UpperBound',inf);
-u =         optimvar('u',k,'LowerBound',-inf,'UpperBound',inf);
+u =         optimvar('u',k,'LowerBound',0,'UpperBound',inf);
 Pdchg =     optimvar('Pdchg',k,'LowerBound',0,'UpperBound',inf);
 xdchg =     optimvar('xdchg',k,'LowerBound',0,'UpperBound',1,'Type','integer');
 Pchg =      optimvar('Pchg',k,'LowerBound',0,'UpperBound',inf);
@@ -69,7 +69,7 @@ prob =      optimproblem('Objective',sum(u));
 %constraint part
 %--constraint for buy and sell electricity
 prob.Constraints.epicons1 = -PARAM.Resolution*PARAM.Buy_rate.*Pnet - u <= 0;
-prob.Constraints.epicons2 = -PARAM.Resolution*PARAM.Sell_rate.*Pnet - u <= 0;
+
 %--battery constraint
 prob.Constraints.chargecons = Pchg  <= xchg*PARAM.battery.charge_rate;
 prob.Constraints.dischargecons = Pdchg  <= xdchg*PARAM.battery.discharge_rate;
@@ -95,5 +95,5 @@ prob.Constraints.soccons = soccons;
 sol = solve(prob,'Options',options);
 sol.dataset_name = dataset_name{i};
 sol.PARAM = PARAM;
-save(strcat('solution/EMS2/',TOU_CHOICE,'_',dataset_name{i},'.mat'),'-struct','sol')
+save(strcat('solution/EMS1/',TOU_CHOICE,'_',dataset_name{i},'.mat'),'-struct','sol')
 end

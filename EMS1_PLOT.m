@@ -1,5 +1,5 @@
 clear;clc;
-sol = load('solution/EMS2/THcurrent_low_solar high_load_8.mat');
+sol = load('solution/EMS1/THcurrent_high_solar low_load_6.mat');
 PARAM = sol.PARAM;
 
 %----------------prepare solution for plotting
@@ -22,8 +22,8 @@ tiledlayout(4,2);
 
 nexttile
 
-stairs(vect,[PARAM.Buy_rate,PARAM.Sell_rate])
-legend('Buy rate','Sell rate','Location','northeastoutside')
+stairs(vect,[PARAM.Buy_rate])
+legend('Buy rate','Location','northeastoutside')
 %set(gca,'YLim',[0 6])
 xlabel('Hour') 
 title('TOU') 

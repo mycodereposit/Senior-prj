@@ -10,9 +10,9 @@ dataset_name = dataset_detail.name;
 PARAM.Horizon = 4;  % horizon to optimize (day)
 PARAM.Resolution = 15; %sampling period(min) use multiple of 15. int 
 
-%TOU_CHOICE = 'smart1' ; % choice for tou 
+TOU_CHOICE = 'smart1' ; % choice for tou 
 %TOU_CHOICE = 'nosell' ;
-TOU_CHOICE = 'THcurrent' ;
+%TOU_CHOICE = 'THcurrent' ;
 PARAM.PV_capacity = 16; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
