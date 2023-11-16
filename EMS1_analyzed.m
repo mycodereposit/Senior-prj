@@ -18,6 +18,7 @@ for i = 1:48
     
 end
 %%
+
 expense_save_thcurrent = networth_with_ems_thcurrent - networth_without_ems_thcurrent;
 expense_save_smart = networth_with_ems_smart - networth_without_ems_smart;
 start_date = '2023-04-01';

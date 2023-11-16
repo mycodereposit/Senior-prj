@@ -1,5 +1,5 @@
 clear;clc;
-sol = load('solution/EMS3_2/THcurrent_low_solar high_load_5.mat');
+sol = load('solution/EMS4_2/high_solar high_load_5.mat');
 PARAM = sol.PARAM;
 % ------------ prepare solution for plotting
 

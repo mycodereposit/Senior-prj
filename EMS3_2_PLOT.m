@@ -1,5 +1,5 @@
 clear;clc;
-sol = load('solution/EMS3_2/THcurrent_low_solar high_load_5.mat');
+sol = load('solution/EMS3_2/THcurrent_high_solar high_load_3.mat');
 PARAM = sol.PARAM;
 
 % ------------ prepare solution for plotting
@@ -99,11 +99,12 @@ hold off
 nexttile
 stairs(vect,sol.Pnet,'r')
 ylim([-10 10])
+
 hold on
 
 grid on
 yyaxis right 
-stairs(vect,Pac,'-.k')
+stairs(vect,PARAM.Buy_rate,'-.k')
 ylim([-10 10])
 ylabel('Pnet(kW)')
 title('Pnet(kW)') 
@@ -142,7 +143,7 @@ datetick('x','HH','keepticks')
 hold off
 
 nexttile;
-stairs(vect,cumsum(sol.u)); ylabel('Expense (THB)')
+stairs(vect,[cumsum(sol.u),sol.Pchg]); ylabel('Expense (THB)')
 title('Cumulative Expense')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
