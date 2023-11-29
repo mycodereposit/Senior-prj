@@ -67,6 +67,7 @@ PARAM.Puload = min(PARAM.PL) ;% (kW) power of uncontrollable load
 
 Pnet =      optimvar('Pnet',k,'LowerBound',0,'UpperBound',inf);
 PV =     optimvar('PV',k,'LowerBound',0,'UpperBound',inf);
+nv =     optimvar('nv',k,'LowerBound',0,'UpperBound',1);
 Pdchg =     optimvar('Pdchg',k,'LowerBound',0,'UpperBound',inf);
 xdchg =     optimvar('xdchg',k,'LowerBound',0,'UpperBound',1,'Type','integer');
 Pchg =      optimvar('Pchg',k,'LowerBound',0,'UpperBound',inf);
@@ -99,7 +100,8 @@ prob.Constraints.ACstudentcons1 = sum(Xac_student,2) <= 1;
 prob.Constraints.ACstudentcons2 = sum(Xac_student,2) >= 0;
 
 %---------- PV ----------
-prob.Constraints.PV = PV <= PARAM.PV;
+prob.Constraints.PV = optimconstr(k);
+prob.Constraints.PV(1:k) = PV(1:k) <= nv(1:k).*PARAM.PV(1:k);
 %---------- Battery constraint ----------
 prob.Constraints.chargecons = Pchg  <= xchg*PARAM.battery.charge_rate;
 

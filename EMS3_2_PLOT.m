@@ -1,11 +1,11 @@
 clear;clc;
-sol = load('solution/EMS3_2/THcurrent_high_solar high_load_3.mat');
+sol = load('solution/EMS3_2/THcurrent_high_solar low_load_5.mat'); %expense case
 PARAM = sol.PARAM;
 
 % ------------ prepare solution for plotting
 
 Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
-Pload = sol.Pchg + sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
+Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
 Pac = sol.Pac_lab + sol.Pac_student;
 %Pnet_check = Pgen  - Pload;
 
@@ -177,3 +177,87 @@ hold off
 % datetick('x','HH','keepticks')
 % 
 % hold off
+%%
+excess_gen = PARAM.PV - PARAM.Puload - sol.Pchg;
+tiledlayout(2,2);
+
+nexttile
+stairs(vect,PARAM.PV,'-b') 
+ylabel('Solar power (kW)','Fontsize',16)
+grid on
+hold on
+yyaxis right
+stairs(vect,Pload,'-r')
+ylim([0 10])
+ylabel('Load (kW)','Fontsize',16)
+legend('Solar','load','Location','northeastoutside','Fontsize',12)
+title('Solar and load (Uncontrollable load + controllable load)','Fontsize',16)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+nexttile
+stairs(vect,[sum(sol.Xac_lab,2),sol.Pac_lab/PARAM.AClab.Paclab_rate],'LineWidth',1.2)
+hold on 
+grid on
+ylim([0 1.5])
+stairs(vect,1.25*PARAM.ACschedule,'-.k','LineWidth',1.2)
+legend('x_{ac,m}','AC level','ACschedule','Location','northeastoutside','Fontsize',12)
+title('Lab Air Conditioner state and AC level','Fontsize',16)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+
+nexttile
+stairs(vect,sol.soc(1:384),'k','LineWidth',1.5) 
+ylabel('SoC (%)')
+grid on
+hold on
+yyaxis right
+stairs(vect,Pload)
+ylim([0 10])
+ylabel('Load (kW)')
+legend('SoC','Load','Location','northeastoutside','Fontsize',12)
+title('State of charge (SoC) and load power','Fontsize',16)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+nexttile
+stairs(vect,[sum(sol.Xac_student,2),sol.Pac_student/PARAM.ACstudent.Pacstudent_rate],'LineWidth',1.2)
+hold on 
+grid on
+ylim([0 1.5])
+stairs(vect,1.25*PARAM.ACschedule,'-.k','LineWidth',1.2)
+legend('x_{ac,s}','AC level','Acschedule','Location','northeastoutside','Fontsize',12)
+title('Student Air Conditioner state and AC level','Fontsize',16)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+%%
+expense = sol.u;
+expense_noems = min(0,PARAM.PV-Pload)*PARAM.Resolution.*PARAM.Buy_rate; % thcurr
+
+
+
+stairs(vect,expense,'-k','LineWidth',1.5)
+ylabel('Cumulative expense(THB)','Fontsize',16)
+hold on
+
+
+stairs(vect,cumsum(expense_noems),'-r')
+
+title('Cumulative expense when using TOU 0 ','Fontsize',16) 
+legend('With EMS 3','Without EMS 3','Location','northeastoutside','Fontsize',12) 
+grid on
+xlabel('Hour')
+ylim([-500 100])
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
