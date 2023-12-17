@@ -1,10 +1,10 @@
 clear;clc;
-filename = 'THcurrent_high_solar low_load_5'; %high solar
-%filename = 'THcurrent_low_solar high_load_5'; %low solar
-%filename = 'smart1_low_solar low_load_9'; %expense
-%filename = 'THcurrent_high_solar high_load_5';
+%filename = 'high_solar low_load_5'; %high solar
+filename = 'low_solar high_load_5'; %low solar
+%filename = 'low_solar low_load_9'; %expense
+%filename = 'high_solar high_load_5';
 
-sol = load(strcat('solution/EMS3_2/',filename,'.mat')); 
+sol = load(strcat('solution/EMS5/',filename,'.mat')); 
 PARAM = sol.PARAM;
 
 % ------------ prepare solution for plotting
@@ -12,9 +12,10 @@ PARAM = sol.PARAM;
 Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
 Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
 Pac = sol.Pac_lab + sol.Pac_student;
+excess_gen = PARAM.PV - Pload;
 %Pnet_check = Pgen  - Pload;
 
-[profit,expense,revenue] = GetExpense(sol.Pnet,PARAM.Buy_rate,PARAM.Sell_rate,PARAM.Resolution);
+%[profit,expense,revenue] = GetExpense(sol.Pnet,PARAM.Buy_rate,PARAM.Sell_rate,PARAM.Resolution);
 
 start_date = '2023-04-24';  %a start date for plotting graph
 start_date = datetime(start_date);
@@ -23,31 +24,28 @@ end_date = start_date + PARAM.Horizon;
 t1 = start_date; t2 = end_date; 
 vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
-
-
-
 %%
 % 6 plot
-excess_gen = PARAM.PV - Pload;
-
 f = figure('PaperPosition',[0 0 21 20],'PaperOrientation','portrait','PaperUnits','centimeters');
 t = tiledlayout(3,2,'TileSpacing','tight','Padding','tight');
 
 colororder({'r','r','r','r'})
+
 nexttile
+hold all
 stairs(vect,PARAM.PV,'-b','LineWidth',1.2) 
-ylabel('Solar power (kW)')
+stairs(vect,sol.PV,'-g','LineWidth',1.2) 
 ylim([0 10])
-yticks(0:2.5:10)
+yticks(0:2:10)
+ylabel('P_{pv} (kW)')
 grid on
-hold on
 yyaxis right
 stairs(vect,Pload,'-r','LineWidth',1.2)
 ylim([0 10])
-yticks(0:2.5:10)
+yticks(0:2:10)
 ylabel('Load (kW)')
-legend('Solar','load','Location','northeastoutside')
-title('Solar generation and load consumption (P_{load} = P_{uload} + P_{ac,s} + P_{ac,m})')
+legend('P_{pv}^{max}','P_{pv}','load','Location','northeastoutside')
+title('Solar generation (P_{pv}^{max}) and load consumption (P_{load} = P_{uload} + P_{ac,s} + P_{ac,m})')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -64,8 +62,7 @@ hold on
 yyaxis right
 stairs(vect,Pload,'-r','LineWidth',1.2)
 ylim([0 10])
-
-yticks(0:2.5:10)
+yticks(0:2:10)
 ylabel('Load (kW)')
 legend('SoC','Load','Location','northeastoutside')
 title('State of charge (SoC) and load consumption (P_{uload} + P_{ac,s} + P_{ac,m})')
@@ -113,15 +110,16 @@ datetick('x','HH','keepticks')
 hold off
 
 nexttile
-stairs(vect,max(0,sol.Pnet),'-r','LineWidth',1.2)
-hold on 
+hold all
+stairs(vect,PARAM.PV,'-b','LineWidth',1.2) 
+stairs(vect,sol.PV,'-g','LineWidth',1.2)
+stairs(vect,sol.Pnet,'--k','LineWidth',1.2)
 grid on
-stairs(vect,min(0,sol.Pnet),'-b','LineWidth',1.2)
-legend('P_{net} > 0 (curtail)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
-title('P_{net} = PV + P_{dchg} - P_{chg} - P_{load}')
+legend('P_{pv}^{max}','P_{pv}','P_{net} = 0','Location','northeastoutside')
+title('Solar generation (P_{pv}^{max}) and P_{pv}')
 xlabel('Hour')
-ylim([-20 10])
-yticks(-25:5:10)
+ylim([-10 10])
+yticks(-10:5:10)
 ylabel('P_{net} (kW)')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -147,38 +145,5 @@ datetick('x','HH','keepticks')
 hold off
 
 fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS3_2/png/6_plot_',filename),'-dpng')
-print(f,strcat('graph/EMS3_2/eps/6_plot_',filename),'-deps')
-
-
-
-
-
-%%
-
-expense = sol.u;
-expense_noems = -min(0,PARAM.PV-Pload)*PARAM.Resolution.*PARAM.Buy_rate; % thcurr
-
-if filename(1) == 'T' | filename(1) == 't'
-    tou = ' TOU 0';
-else
-    tou = ' TOU 1';
-end
-f = figure('PaperPosition',[0 0 10 7.5],'PaperOrientation','portrait','PaperUnits','centimeters');
-
-stairs(vect,cumsum(expense),'-k','LineWidth',1.5)
-ylabel('Cumulative expense (THB)','Fontsize',16)
-hold on
-stairs(vect,cumsum(expense_noems),'-r','LineWidth',1)
-title(strcat('Cumulative expense when using',tou),'Fontsize',16) 
-legend('With EMS 3','Without EMS 3','Location','northwest','Fontsize',12) 
-grid on
-xlabel('Hour')
-ylim([-100 700])
-yticks(-100:100:700)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS3_2/png/expense_',filename),'-dpng')
-print(f,strcat('graph/EMS3_2/eps/expense_',filename),'-deps')
+print(f,strcat('graph/EMS5/png/6_plot_',filename),'-dpng')
+print(f,strcat('graph/EMS5/eps/6_plot_',filename),'-deps')

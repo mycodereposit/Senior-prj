@@ -1,14 +1,12 @@
 clear;clc;
-%%for THcurrent
+
 dataset_detail = readtable('dataset/dataset_detail.csv');
 dataset_name = dataset_detail.name;
 pv_type = dataset_detail.pv_type;
 load_type = dataset_detail.load_type;
 dataset_startdate = dataset_detail.start_date;
 
-%TOU_CHOICE = 'smart1' ; % choice for tou 
-%TOU_CHOICE = 'nosell' ;
-%TOU_CHOICE = 'THcurrent' 
+
 for i = 1:48
     sol_thcurrent = load(strcat('solution/EMS3_2/','THcurrent','_',dataset_name{i},'.mat'));
     sol_smart = load(strcat('solution/EMS3_2/','smart1','_',dataset_name{i},'.mat'));
@@ -27,101 +25,119 @@ end
 %%
 expense_save_thcurrent = - expense_with_ems_thcurrent + expense_without_ems_thcurrent;
 expense_save_smart = -expense_with_ems_smart + expense_without_ems_smart;
-a = table(expense_with_ems_thcurrent,expense_with_ems_smart,expense_without_ems_thcurrent,expense_without_ems_smart,expense_save_thcurrent,expense_save_smart,pv_type,load_type);
+percent_save_thcurrent = expense_save_thcurrent*100./expense_without_ems_thcurrent;
+percent_save_smart = expense_save_smart*100./expense_without_ems_smart;
+a = table(percent_save_thcurrent,percent_save_smart,expense_with_ems_thcurrent,expense_with_ems_smart,expense_without_ems_thcurrent,expense_without_ems_smart,expense_save_thcurrent,expense_save_smart,pv_type,load_type);
 
-high_load = a(strcmp(a.load_type,'high_load'),:);
-low_load = a(strcmp(a.load_type,'low_load'),:);
-high_solar = a(strcmp(a.pv_type,'high_solar'),:);
-low_solar = a(strcmp(a.pv_type,'low_solar'),:);
+% high_load = a(strcmp(a.load_type,'high_load'),:);
+% low_load = a(strcmp(a.load_type,'low_load'),:);
+% high_solar = a(strcmp(a.pv_type,'high_solar'),:);
+% low_solar = a(strcmp(a.pv_type,'low_solar'),:);
 
-%plot_case = a;
-plot_case = low_load;
-%plot_case = high_solar;
-% plot_case = low_solar;
-
-
-tiledlayout(2,3);
-
-nexttile;
-bar(1:length(plot_case.pv_type),[plot_case.expense_with_ems_thcurrent,plot_case.expense_without_ems_thcurrent])
-grid on
-legend('with EMS3(THB)','without EMS3(THB)','Location','northeastoutside')
-title('expense when TOU THcurrent is used')
-ylabel('expense(THB)')
-%xticks(start_date:3:end_date)
-
-nexttile;
-histogram(plot_case.expense_with_ems_thcurrent,10)
-title('histogram of expense by EMS3 when TOU is THcurrent')
-xlabel('expense(THB)')
-ylabel('count')
-nexttile;
-histogram(plot_case.expense_save_thcurrent,10)
-title('histogram of expense save by EMS3 when TOU is THcurrent')
-xlabel('expense save(THB)')
-ylabel('count')
-
-nexttile;
-bar(1:length(plot_case.pv_type),[plot_case.expense_with_ems_smart,plot_case.expense_without_ems_smart])
-grid on
-legend('with EMS3(THB)','without EMS3(THB)','Location','northeastoutside')
-title('expense when TOU smart is used')
-ylabel('expense(THB)')
-%xticks(start_date:3:end_date)
-
-nexttile;
-histogram(plot_case.expense_with_ems_smart,10)
-title('histogram of networth by EMS3 when TOU is smart')
-xlabel('expense(THB)')
-ylabel('count')
-nexttile;
-histogram(plot_case.expense_save_smart,10)
-title('histogram of expense save by EMS3 when TOU is smart')
-xlabel('expense save(THB)')
-ylabel('count')
 %%
-%plot_case = high_load;
-%plot_case = low_load;
-plot_case = low_solar;
-%plot_case = high_solar;
-f = figure('Position', [0 0 1920 1080]);
-t = tiledlayout(2,2);
+% percent hist
+pv_list = {'low_solar','high_solar'};
+for i = 1:2
+    f = figure('Position', [0 0 2480 1000]);
+    t = tiledlayout(2,2);
+    plot_case = a(strcmp(a.pv_type,pv_list{i}),:);
+    nexttile;
+    bar([plot_case.expense_with_ems_thcurrent,plot_case.expense_without_ems_thcurrent])
+    grid on
+    yticks(0:100:700)
+    ylim([0 700])
+    legend('with EMS3','without EMS3','Location','northeastoutside')
+    title('Expense when TOU 0 is used')
+    ylabel('Expense (THB)')
+    xlabel('Data set index')
+    
+    nexttile;
+    histogram(plot_case.percent_save_thcurrent,10,'BinWidth',5,'Normalization','percentage')
+    grid on
+    title('Histogram of expense save by EMS 3 when TOU 0 is used')
+    xlabel('Expense save (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:20:100)
+    
+    
+    nexttile;
+    bar([plot_case.expense_with_ems_smart,plot_case.expense_without_ems_smart])
+    grid on
+    yticks(0:100:700)
+    ylim([0 700])
+    legend('with EMS3','without EMS3','Location','northeastoutside')
+    title('Expense when TOU 1 is used')
+    ylabel('Expense (THB)')
+    xlabel('Data set index')
+    
+    nexttile;
+    histogram(plot_case.percent_save_smart,10,'BinWidth',5,'Normalization','percentage')
+    grid on
+    title('Histogram of expense save by EMS 3 when TOU 1 is used')
+    xlabel('Expense save (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:20:100)
+    fontsize(20,'points')
+    exportgraphics(t,strcat('graph/EMS3_2/png/',pv_list{i},'_bar_percent_hist.png'))
+    exportgraphics(t,strcat('graph/EMS3_2/eps/',pv_list{i},'_bar_percent_hist.eps'))
+end
+%%
+% actual hist
+pv_list = {'low_solar','high_solar'};
+for i = 1:2
+    f = figure('Position', [0 0 2480 1000]);
+    t = tiledlayout(2,2);
+    plot_case = a(strcmp(a.pv_type,pv_list{i}),:);
+    
+    nexttile;
+    bar([plot_case.expense_with_ems_thcurrent,plot_case.expense_without_ems_thcurrent])
+    grid on
+    legend('with EMS3','without EMS3','Location','north')
+    title('Expense when TOU 0 is used')
+    ylabel('Expense (THB)')
+    xlabel('Data set index')
+    yticks(0:100:700)
+    ylim([0 700])
+    
+    nexttile;
+    histogram(plot_case.expense_save_thcurrent,10,'BinWidth',50,'Normalization','percentage')
+    grid on
+    title('Histogram of expense save by EMS 3 when TOU 0 is used')
+    xlabel('Expense save (THB)')
+    ylabel('Percent')
+    xticks(175:50:600)
+    xlim([150 600])
+    ylim([0 100])
+    yticks(0:20:100)
+    
+    nexttile;
+    bar([plot_case.expense_with_ems_smart,plot_case.expense_without_ems_smart])
+    grid on
+    legend('with EMS3','without EMS3','Location','north')
+    title('Expense when TOU 1 is used')
+    ylabel('Expense (THB)')
+    xlabel('Data set index')
+    yticks(0:100:700)
+    ylim([0 700])
 
-nexttile;
-bar([plot_case.expense_with_ems_thcurrent,plot_case.expense_without_ems_thcurrent])
-grid on
-legend('with EMS3','without EMS3','Location','northeastoutside','FontSize',16)
-title('Expense when TOU 0 is used','FontSize',16)
-ylabel('Expense (THB)','FontSize',16)
-xlabel('Data set index','FontSize',16)
-
-nexttile;
-histogram(plot_case.expense_save_thcurrent,10,'BinWidth',25)
-grid on
-title('Histogram of expense save by EMS 3 when TOU 0 is used','FontSize',16)
-xlabel('Expense save (THB)','FontSize',16)
-ylabel('Count','FontSize',16)
-xticks(0:50:1250)
-ylim([0 10])
-yticks(0:2:24)
-xlim([200 600])
-
-nexttile;
-bar([plot_case.expense_with_ems_smart,plot_case.expense_without_ems_smart])
-grid on
-legend('with EMS3','without EMS3','Location','northeastoutside','FontSize',16)
-title('Expense when TOU 1 is used','FontSize',16)
-ylabel('Expense (THB)','FontSize',16)
-xlabel('Data set index','FontSize',16)
-
-nexttile;
-histogram(plot_case.expense_save_smart,10,'BinWidth',25)
-grid on
-title('Histogram of expense save by EMS 3 when TOU 1 is used','FontSize',16)
-xlabel('Expense save (THB)','FontSize',16)
-ylabel('Count','FontSize',16)
-xticks(0:50:1250)
-yticks(0:2:24)
-ylim([0 10])
-xlim([200 600])
-exportgraphics(t,'graph/EMS3_2/low_solar_bar_hist.png')
+    nexttile;
+    histogram(plot_case.expense_save_smart,10,'BinWidth',50,'Normalization','percentage')
+    grid on
+    title('Histogram of expense save by EMS 3 when TOU 1 is used')
+    xlabel('Expense save (THB)')
+    ylabel('Percent')
+    xticks(175:50:600)
+    xlim([150 600])
+    ylim([0 100])
+    yticks(0:20:100)
+    fontsize(20,'pixels')
+    fontsize(20,'points')
+    exportgraphics(t,strcat('graph/EMS3_2/png/',pv_list{i},'_bar_actual_hist.png'))
+    exportgraphics(t,strcat('graph/EMS3_2/eps/',pv_list{i},'_bar_actual_hist.eps'))
+end
