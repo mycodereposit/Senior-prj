@@ -18,7 +18,13 @@ for i = 1:48
     
     expense_without_ems_thcurrent(i,1) = -sum(sol_thcurrent.PARAM.Buy_rate.*min(0,Pnet_thcurrent)*sol_thcurrent.PARAM.Resolution );
     expense_without_ems_smart(i,1) = -sum(sol_smart.PARAM.Buy_rate.*min(0,Pnet_smart)*sol_smart.PARAM.Resolution );
-      
+    
+    percent_ACstudent_util_thcurr(i,1) =  floor(100*sol_thcurrent.PARAM.ACschedule'*sum(sol_thcurrent.Xac_student,2)/sum(sol_thcurrent.PARAM.ACschedule));
+    percent_ACstudent_util_smart(i,1) =  floor(100*sol_smart.PARAM.ACschedule'*sum(sol_smart.Xac_student,2)/sum(sol_smart.PARAM.ACschedule));
+    
+    percent_AClab_util_thcurr(i,1) =  floor(100*sol_thcurrent.PARAM.ACschedule'*sum(sol_thcurrent.Xac_lab,2)/sum(sol_thcurrent.PARAM.ACschedule));
+    percent_AClab_util_smart(i,1) =  floor(100*sol_smart.PARAM.ACschedule'*sum(sol_smart.Xac_lab,2)/sum(sol_smart.PARAM.ACschedule));
+    
     
 end
 
@@ -27,7 +33,20 @@ expense_save_thcurrent = - expense_with_ems_thcurrent + expense_without_ems_thcu
 expense_save_smart = -expense_with_ems_smart + expense_without_ems_smart;
 percent_save_thcurrent = expense_save_thcurrent*100./expense_without_ems_thcurrent;
 percent_save_smart = expense_save_smart*100./expense_without_ems_smart;
-a = table(percent_save_thcurrent,percent_save_smart,expense_with_ems_thcurrent,expense_with_ems_smart,expense_without_ems_thcurrent,expense_without_ems_smart,expense_save_thcurrent,expense_save_smart,pv_type,load_type);
+a = table(percent_AClab_util_smart, ...
+            percent_AClab_util_thcurr, ...
+            percent_ACstudent_util_smart, ...
+            percent_ACstudent_util_thcurr, ...
+            percent_save_thcurrent, ...
+            percent_save_smart, ...
+            expense_with_ems_thcurrent, ...
+            expense_with_ems_smart, ...
+            expense_without_ems_thcurrent, ...
+            expense_without_ems_smart, ...
+            expense_save_thcurrent, ...
+            expense_save_smart, ...
+            pv_type, ...
+            load_type);
 
 % high_load = a(strcmp(a.load_type,'high_load'),:);
 % low_load = a(strcmp(a.load_type,'low_load'),:);
@@ -140,4 +159,62 @@ for i = 1:2
     fontsize(20,'points')
     exportgraphics(t,strcat('graph/EMS3_2/png/',pv_list{i},'_bar_actual_hist.png'))
     exportgraphics(t,strcat('graph/EMS3_2/eps/',pv_list{i},'_bar_actual_hist.eps'))
+end
+%%
+% ac hist
+pv_list = {'low_solar','high_solar'};
+for i = 1:2
+    f = figure('PaperPosition',[0 0 21 20*2/3],'PaperOrientation','portrait','PaperUnits','centimeters');
+    t = tiledlayout(2,2,'TileSpacing','tight','Padding','tight');
+    plot_case = a(strcmp(a.pv_type,pv_list{i}),:);
+
+    nexttile;
+    histogram(plot_case.percent_AClab_util_thcurr,10,'BinWidth',5,'Normalization','percentage','BinLimits',[0 100])
+    grid on
+    title('Histogram of machine laboratory AC utilization under TOU 0')
+    xlabel('AC utilization (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:10:100)
+    
+    
+
+    nexttile;
+    histogram(plot_case.percent_ACstudent_util_thcurr,10,'BinWidth',5,'Normalization','percentage','BinLimits',[0 100])
+    grid on
+    title('Histogram of student room AC utilization under TOU 0')
+    xlabel('AC utilization (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:10:100)
+    
+    nexttile;
+    histogram(plot_case.percent_AClab_util_smart,10,'BinWidth',5,'Normalization','percentage','BinLimits',[0 100])
+    grid on
+    title('Histogram of machine laboratory AC utilization under TOU 1')
+    xlabel('AC utilization (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:10:100)
+    
+    nexttile;
+    histogram(plot_case.percent_ACstudent_util_smart,10,'BinWidth',5,'Normalization','percentage','BinLimits',[0 100])
+    grid on
+    title('Histogram of student room AC utilization under TOU 1')
+    xlabel('AC utilization (%)')
+    ylabel('Percent')
+    xticks(0:10:100)
+    xlim([0 110])
+    ylim([0 100])
+    yticks(0:10:100)
+
+    fontsize(0.6,'centimeters')
+    print(f,strcat('graph/EMS3_2/png/',pv_list{i},'_ac_hist'),'-dpng')
+    print(f,strcat('graph/EMS3_2/eps/',pv_list{i},'_ac_hist'),'-deps')
 end
