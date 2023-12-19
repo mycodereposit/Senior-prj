@@ -1,6 +1,6 @@
 clear;clc;
-%filename = 'thcurrent_high_solar high_load_9'; % highest load
-filename = 'smart1_high_solar high_load_13'; % highest save
+filename = 'smart1_high_solar high_load_9'; % highest load
+%filename = 'smart1_high_solar high_load_13'; % highest save
 sol = load(strcat('solution/EMS1/',filename,'.mat')); 
 PARAM = sol.PARAM;
 
@@ -101,7 +101,9 @@ hold off
 
 
 nexttile
-stairs(vect,excess_gen,'-k','LineWidth',1.2) 
+stairs(vect,excess_gen,'-k','LineWidth',1.2)
+yticks(-30:10:30)
+ylim([-30 30])
 ylabel('Excess power (kW)')
 hold on
 grid on
@@ -149,9 +151,9 @@ ylabel('TOU (THB)')
 hold on
 grid on
 yyaxis right 
-stairs(vect,sol.Pchg,'-r','LineWidth',1)
+stairs(vect,sol.Pchg,'-b','LineWidth',1)
 hold on 
-stairs(vect,sol.Pdchg,'-b','LineWidth',1)
+stairs(vect,sol.Pdchg,'-r','LineWidth',1)
 ylabel('Power (kW)')
 
 legend('Buy rate','P_{chg}','P_{dchg}','Location','northeastoutside')
@@ -231,6 +233,7 @@ datetick('x','HH','keepticks')
 
 nexttile
 stairs(vect,excess_gen,'-k','LineWidth',1.2)
+yticks(-30:10:30)
 ylim([-30 30])
 ylabel('Excess power (kW)')
 hold on

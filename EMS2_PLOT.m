@@ -101,10 +101,13 @@ datetick('x','HH','keepticks')
 nexttile
 stairs(vect,excess_gen,'-k','LineWidth',1.2) 
 ylabel('Excess power (kW)')
+yticks(-30:10:30)
+ylim([-30 30])
 hold on
 grid on
 yyaxis right 
 stairs(vect,sol.xchg,'-b','LineWidth',1)
+
 hold on 
 grid on
 stairs(vect,-sol.xdchg,'-r','LineWidth',1)
