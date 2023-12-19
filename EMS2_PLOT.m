@@ -1,7 +1,7 @@
 clear;clc;
-%filename = 'smart1_high_solar high_load_9'; % highest load
-%filename = 'smart1_high_solar low_load_11'; %highest profit
-filename = 'smart1_high_solar low_load_7' ; %expense to profit
+filename = 'thcurrent_high_solar high_load_9'; % highest load
+%filename = 'thcurrent_high_solar low_load_11'; %highest profit
+%filename = 'thcurrent_high_solar low_load_7' ; %expense to profit
 
 sol = load(strcat('solution/EMS2/',filename,'.mat')); 
 PARAM = sol.PARAM;
@@ -152,9 +152,9 @@ stairs(vect,PARAM.Sell_rate,'-k','LineWidth',1.2)
 hold on
 grid on
 yyaxis right 
-stairs(vect,sol.Pchg,'-r','LineWidth',1)
+stairs(vect,sol.Pchg,'-b','LineWidth',1)
 hold on 
-stairs(vect,sol.Pdchg,'-b','LineWidth',1)
+stairs(vect,sol.Pdchg,'-r','LineWidth',1)
 ylabel('Power (kW)')
 legend('Buy rate','Sell rate','P_{chg}','P_{dchg}','Location','northeastoutside')
 title('P_{chg},P_{dchg} and TOU')

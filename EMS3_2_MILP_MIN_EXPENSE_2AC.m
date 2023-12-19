@@ -11,7 +11,7 @@ PARAM.Resolution = 15; %sampling period(min) use multiple of 15. int
 %--- four extreme cases
 %name = 'high_solar high_load_9.csv'; % high load
 %name = 'low_solar low_load_4.csv';  % low load
-%name = 'high_solar low_load_5.csv'; % high solar
+name = 'high_solar low_load_5.csv'; % high solar
 %name = 'low_solar high_load_5.csv'; % low  solar
 
 TOU_CHOICE = 'smart1' ; % choice for tou 
@@ -134,8 +134,9 @@ sol = solve(prob,'Options',options);
 % ------------ prepare solution for plotting
 
 Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
-Pload = sol.Pchg + sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
+Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
 Pac = sol.Pac_lab + sol.Pac_student;
+excess_gen = PARAM.PV - Pload;
 %Pnet_check = Pgen  - Pload;
 
 [profit,expense,revenue] = GetExpense(sol.Pnet,PARAM.Buy_rate,PARAM.Sell_rate,PARAM.Resolution);
@@ -149,162 +150,124 @@ vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
 
 
-tiledlayout(5,2);
+f = figure('PaperPosition',[0 0 21 20],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(3,2,'TileSpacing','tight','Padding','tight');
 
+colororder({'r','r','r','r'})
 nexttile
-
-stairs(vect,PARAM.Buy_rate)
-grid on
-legend('Buy rate','Location','northeastoutside')
-%set(gca,'YLim',[0 6])
-xlabel('Hour') 
-title('TOU') 
-ylabel('TOU (THB)')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-
-
-nexttile
-
-stairs(vect,sol.soc(1:k))
-grid on
-ylabel('SoC (%)')
-title('State of charge (SoC)')
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-
-
-nexttile
-stairs(vect,sol.Pchg)
-ylim([0,15])
-hold on 
-grid on
-yyaxis right
-stairs(vect,10*sol.xchg,'-.r')
-legend('P_{chg}','x_{chg}','Location','northeastoutside')
-title('Pchg (kW) and xchg')
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-ylim([0,15])
-hold off
-
-
-nexttile
-stairs(vect,PARAM.PV) 
+stairs(vect,PARAM.PV,'-b','LineWidth',1.2) 
 ylabel('Solar power (kW)')
+ylim([0 10])
+yticks(0:2.5:10)
 grid on
 hold on
 yyaxis right
-
-stairs(vect,Pload)
+stairs(vect,Pload,'-r','LineWidth',1.2)
+ylim([0 10])
+yticks(0:2.5:10)
 ylabel('Load (kW)')
 legend('Solar','load','Location','northeastoutside')
-title('Solar and load power')
+title('Solar generation and load consumption (P_{load} = P_{uload} + P_{ac,s} + P_{ac,m})')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
-
-
 nexttile
-stairs(vect,sol.Pdchg) 
-ylim([0,15])
+stairs(vect,sol.soc(1:384),'k','LineWidth',1.5) 
+ylabel('SoC (%)')
+ylim([35 75])
 hold on
+stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','LineWidth',1.5,'HandleVisibility','off') 
 grid on
-yyaxis right 
-stairs(vect,10*sol.xdchg,'-.r')
-legend('P_{dchg}','x_{dchg}','Location','northeastoutside')
-title('Pdchg (kW) and xdchg')
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-ylim([0,15])
-hold off
-
-
-nexttile
-stairs(vect,sol.Pnet,'r')
-ylim([-10 10])
 hold on
+yyaxis right
+stairs(vect,Pload,'-r','LineWidth',1.2)
+ylim([0 10])
 
-grid on
-yyaxis right 
-stairs(vect,Pac,'-.k')
-ylim([-10 10])
-ylabel('Pnet(kW)')
-title('Pnet(kW)') 
-legend('P_{net}(kW)','P_{ac}(kW)','Location','northeastoutside') 
+yticks(0:2.5:10)
+ylabel('Load (kW)')
+legend('SoC','Load','Location','northeastoutside')
+title('State of charge (SoC) and load consumption (P_{uload} + P_{ac,s} + P_{ac,m})')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
 nexttile
-stem(vect,sol.xchg)
-ylim([-2,2])
+hold all
+stairs(vect,excess_gen,'-k','LineWidth',1.2) 
+grid on
+ylim([-10 10])
+yticks(-10:5:10)
+ylabel('Excess power (kW)')
+yyaxis right 
+stairs(vect,sol.xchg,'-b','LineWidth',1)
+stairs(vect,-sol.xdchg,'-r','LineWidth',1)
+legend('Excess power','x_{chg}','x_{dchg}','Location','northeastoutside')
+title('Excess power = P_{pv} - P_{load} and Battery charge/discharge status')
+
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+yticks(-2:1:2)
+ylim([-1.5,1.5])
+hold off
+
+nexttile
+stairs(vect,sol.Pac_lab*100/PARAM.AClab.Paclab_rate,'-r','LineWidth',1.2)
+ylim([0 100])
+ylabel('AC level (%)')
+yticks([0 50 70 80 100])
 hold on 
 grid on
 yyaxis right
-stem(vect,-sol.xdchg,'k')
-legend('x_{chg}','x_{dchg}','Location','northeastoutside')
-title('xchg  and xdchg')
+stairs(vect,PARAM.ACschedule,'-.k','LineWidth',1.2)
+ylim([0 1.5])
+yticks([0 1])
+legend('AC level','ACschedule')
+title('Lab AC level')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
-ylim([-2,2])
 hold off
 
 nexttile
-stairs(vect,[sum(sol.Xac_lab,2),sol.Pac_lab/PARAM.AClab.Paclab_rate])
+stairs(vect,max(0,sol.Pnet),'-r','LineWidth',1.2)
 hold on 
 grid on
-ylim([0 1.5])
-stairs(vect,1.25*PARAM.ACschedule,'-.k')
-legend('x_{ac}','Pac(%)','ACschedule','Location','northeastoutside')
-title('Lab Air Conditioner state and Power')
+stairs(vect,min(0,sol.Pnet),'-b','LineWidth',1.2)
+legend('P_{net} > 0 (curtail)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
+title('P_{net} = PV + P_{dchg} - P_{chg} - P_{load}')
 xlabel('Hour')
+ylim([-20 10])
+yticks(-25:5:10)
+ylabel('P_{net} (kW)')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
-
-nexttile;
-stairs(vect,cumsum(sol.u)); ylabel('Expense (THB)')
-title('Cumulative Expense')
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
 
 
 nexttile
-stairs(vect,[sum(sol.Xac_student,2),sol.Pac_student/PARAM.ACstudent.Pacstudent_rate])
+stairs(vect,sol.Pac_student*100/PARAM.ACstudent.Pacstudent_rate,'-r','LineWidth',1.2)
+ylim([0 100])
+yticks([0 50 70 80 100])
+ylabel('AC level (%)')
 hold on 
 grid on
+yyaxis right
+stairs(vect,PARAM.ACschedule,'-.k','LineWidth',1.2)
+yticks([0 1])
 ylim([0 1.5])
-stairs(vect,1.25*PARAM.ACschedule,'-.k')
-legend('x_{ac}','Pac(%)','Acschedule','Location','northeastoutside')
-title('Student Air Conditioner state and Power')
+legend('AC level','ACschedule')
+title('Student AC level')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
-% nexttile
-% stairs(vect,PV)
-% 
-% hold on 
-% grid on
-% yyaxis right
-% stairs(vect,Pgen)
-% legend('PV','Pgen')
-% title('PV(kW)  and Pgen(kW)')
-% xlabel('Hour')
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-% 
-% hold off
+fontsize(0.6,'centimeters')
+
 
 function schedule = getSchedule(start,stop,Resolution,Horizon)
     schedule = zeros(24/Resolution,1);

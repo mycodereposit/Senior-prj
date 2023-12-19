@@ -110,264 +110,167 @@ t1 = start_date; t2 = end_date;
 vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
 
-tiledlayout(4,2);
+f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
 
 nexttile
-
-stairs(vect,[PARAM.Buy_rate,PARAM.Sell_rate])
+colororder({'k','k','k','k'})
+stairs(vect,PARAM.Buy_rate,'-m','LineWidth',1.2)
 hold on
 grid on
+stairs(vect,PARAM.Sell_rate,'-k','LineWidth',1.2)
 legend('Buy rate','Sell rate','Location','northeastoutside')
-
 xlabel('Hour') 
 title('TOU') 
 ylabel('TOU (THB)')
 ylim([0 8])
+yticks(0:2:8)
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 
 
 nexttile
-
 stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
+ylim([35 75])
 grid on
 hold on
+stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
 yyaxis right
-stairs(vect,sol.Pchg,'-r')
+stairs(vect,sol.Pchg,'-b','LineWidth',1)
 hold on 
-stairs(vect,sol.Pdchg,'-b')
+stairs(vect,sol.Pdchg,'-r','LineWidth',1)
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
-ylabel('Power(kW)')
+ylabel('Power (kW)')
 title('State of charge (SoC)')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 
+
 nexttile
-stairs(vect,PARAM.PV) 
+stairs(vect,PARAM.PV,'-b','LineWidth',1.2) 
 ylabel('Solar power (kW)')
+ylim([0 40])
+yticks(0:10:40)
 grid on
 hold on
 yyaxis right
-stairs(vect,PARAM.PL)
+stairs(vect,PARAM.PL,'-r','LineWidth',1.2)
+ylim([0 40])
+yticks(0:10:40)
 ylabel('Load (kW)')
 legend('Solar','load','Location','northeastoutside')
-title('Solar and load power')
+title('Solar generation and load consumption')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
+
 nexttile
-stairs(vect,max(0,sol.Pnet),'-r')
+stairs(vect,max(0,sol.Pnet),'-g','LineWidth',1)
 hold on 
 grid on
-
-stairs(vect,min(0,sol.Pnet),'-b')
-legend('P_{net} > 0 (sell to grid)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
+stairs(vect,min(0,sol.Pnet),'-r','LineWidth',1)
+legend('P_{net} > 0 (sold to grid)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
 title('P_{net} = PV + P_{dchg} - P_{chg} - P_{load}')
 xlabel('Hour')
+yticks(-100:25:50)
 ylim([-100 50])
-ylabel('P_{net}(kW)')
+ylabel('P_{net} (kW)')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 
-hold off
-
 
 nexttile
-stairs(vect,excess_gen,'-k') 
-ylabel('Excess power(kW)')
+stairs(vect,excess_gen,'-k','LineWidth',1.2) 
+ylabel('Excess power (kW)')
+yticks(-30:10:30)
+ylim([-30 30])
 hold on
 grid on
 yyaxis right 
-stairs(vect,sol.xchg,'-b')
-legend('Excess power','x_{chg}','Location','northeastoutside')
-title('Excess power = PV - P_{load} and Battery charge status')
+stairs(vect,sol.xchg,'-b','LineWidth',1)
 
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-yticks([0 1 2])
-ylim([0,2])
-hold off
-
-
-
-
-nexttile
-
-stairs(vect,expense,'-r')
-hold on
-stairs(vect,revenue,'-b')
-ylabel('Revenue/Expense(THB)')
-
-hold on
-yyaxis right
-
-stairs(vect,cumsum(profit),'-k','LineWidth',1.5)
-ylabel('Cumulative profit(THB)')
-title('Cumulative profit when using EMS2') 
-legend('Expense','Revenue','Cumulative profit','Location','northeastoutside') 
-grid on
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-
-nexttile
-stairs(vect,excess_gen,'-k') 
-ylabel('Excess power(kW)')
-hold on
-grid on
-yyaxis right 
-stairs(vect,sol.xdchg,'-r')
-legend('Excess power','x_{dchg}','Location','northeastoutside')
-title('Excess power = PV - P_{load} and Battery discharge status')
-
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-yticks([0 1 2])
-ylim([0,2])
-hold off
-
-
-
-nexttile
-
-stairs(vect,expense_noems,'-r')
-hold on
-stairs(vect,revenue_noems,'-b')
-ylabel('Revenue/Expense(THB)')
-
-hold on
-yyaxis right
-
-stairs(vect,cumsum(profit_noems),'-k','LineWidth',1.5)
-ylabel('Cumulative profit(THB)')
-title('Cumulative profit without EMS2') 
-legend('Expense','Revenue','Cumulative profit','Location','northeastoutside') 
-grid on
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-%%
-% stairs(vect,[PARAM.PV/6,PARAM.PL],'LineWidth',1.2) 
-% ylabel('Power (kW)')
-% grid on
-% 
-% legend('Solar','Load','Location','northeastoutside')
-% title('Solar generation and Load consumption from 2023-05-27 to 2023-05-30')
-% xlabel('Hour')
-% yticks(1:15)
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-% hold off
-
-% stairs(vect,PARAM.PL) 
-% ylabel('load (kW)')
-% grid on
-% 
-% legend('load','Location','northeastoutside')
-% title('Load consumption from 2023-05-27 to 2023-05-30')
-% xlabel('Hour')
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-% hold off
-
-% stairs(vect,[PARAM.Buy_rate,PARAM.Sell_rate])
-% 
-% grid on
-% legend('Buy rate','Sell rate','Location','northeastoutside')
-% 
-% xlabel('Hour') 
-% title('TOU') 
-% ylabel('TOU (THB)')
-% ylim([0 8])
-% xlim([start_date end_date-3])
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-
-tiledlayout(2,2);
-
-nexttile
-stairs(vect,PARAM.PV,'-b') 
-ylabel('Solar power (kW)','Fontsize',16)
-grid on
-hold on
-yyaxis right
-stairs(vect,PARAM.PL,'-r')
-ylabel('Load (kW)','Fontsize',16)
-legend('Solar','load','Location','northeastoutside','Fontsize',12)
-title('Solar and load power','Fontsize',16)
-xlabel('Hour','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-
-
-
-nexttile
-
-stairs(vect,expense,'-r')
-hold on
-stairs(vect,revenue,'-b')
-ylabel('Revenue/Expense (THB)','Fontsize',16)
-
-hold on
-yyaxis right
-
-stairs(vect,cumsum(profit),'-k','LineWidth',1.5)
-ylabel('Cumulative profit (THB)','Fontsize',16)
-title('Cumulative profit when using EMS2','Fontsize',16) 
-legend('Expense','Revenue','Cumulative profit','Location','northeastoutside','Fontsize',12) 
-grid on
-xlabel('Hour','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-
-
-
-nexttile
-
-stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
-ylabel('SoC (%)','Fontsize',16)
-grid on
-hold on
-yyaxis right
-stairs(vect,sol.Pchg,'-r')
 hold on 
-stairs(vect,sol.Pdchg,'-b')
-legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside','Fontsize',12)
-ylabel('Power (kW)','Fontsize',16)
-title('State of charge (SoC)','Fontsize',16)
-xlabel('Hour','Fontsize',16)
+grid on
+stairs(vect,-sol.xdchg,'-r','LineWidth',1)
+legend('Excess power','x_{chg}','x_{dchg}','Location','northeastoutside')
+title('Excess power = P_{pv} - P_{load} and Battery charge/discharge status')
+xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
+yticks(-1:1)
+ylim([-1.5,1.5])
+hold off
+
 
 nexttile
-
-stairs(vect,expense_noems,'-r')
+stairs(vect,revenue,'-r','LineWidth',1)
 hold on
-stairs(vect,revenue_noems,'-b')
-ylabel('Revenue/Expense (THB)','Fontsize',16)
-
+stairs(vect,expense,'-b','LineWidth',1)
+ylabel('Expense/Revenue (THB)')
 hold on
+ylim([-60 30])
+yticks(-60:20:40)
 yyaxis right
-
-stairs(vect,cumsum(profit_noems),'-k','LineWidth',1.5)
-ylabel('Cumulative profit (THB)','Fontsize',16)
-title('Cumulative profit without EMS2','Fontsize',16) 
-legend('Expense','Revenue','Cumulative profit','Location','northeastoutside','Fontsize',12) 
+stairs(vect,cumsum(profit),'-k','LineWidth',1.5)
+ylabel('Cumulative profit (THB)')
+title('With EMS 2') 
+legend('Revenue','Expense','Cumulative profit','Location','northeastoutside') 
 grid on
-xlabel('Hour','Fontsize',16)
+xlabel('Hour')
+ylim([-3500 1000])
+yticks(-3500:500:1000)
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
+nexttile
+stairs(vect,PARAM.Buy_rate,'-m','LineWidth',1.2) 
+ylim([0 8])
+yticks(0:2:8)
+ylabel('TOU (THB)')
+hold on 
+stairs(vect,PARAM.Sell_rate,'-k','LineWidth',1.2) 
+hold on
+grid on
+yyaxis right 
+stairs(vect,sol.Pchg,'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg,'-r','LineWidth',1)
+ylabel('Power (kW)')
+legend('Buy rate','Sell rate','P_{chg}','P_{dchg}','Location','northeastoutside')
+title('P_{chg},P_{dchg} and TOU')
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+ylim([0 80])
+hold off
+
+
+
+nexttile
+stairs(vect,revenue_noems,'-r','LineWidth',1)
+hold on
+stairs(vect,expense_noems,'-b','LineWidth',1)
+ylabel('Expense/Revenue (THB)')
+hold on
+ylim([-60 30])
+yticks(-60:20:40)
+yyaxis right
+stairs(vect,cumsum(profit_noems),'-k','LineWidth',1.5)
+ylabel('Cumulative profit (THB)')
+title('Without EMS 2') 
+legend('Revenue','Expense','Cumulative profit','Location','northeastoutside') 
+grid on
+xlabel('Hour')
+ylim([-3500 1000])
+yticks(-3500:500:1000)
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+fontsize(0.6,'centimeters')
 
 
