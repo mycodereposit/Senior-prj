@@ -20,15 +20,18 @@ for i = 1:48
     networth_without_ems_smart(i,1) = sum(GetExpense(sol_smart.PARAM.PV-sol_smart.PARAM.PL, ...
                                       sol_smart.PARAM.Buy_rate, ...
                                       sol_smart.PARAM.Sell_rate, ...
-                                      sol_smart.PARAM.Resolution));  
-    
+                                      sol_smart.PARAM.Resolution));
+    neg_energy_thcurrent(i,1) = -sum(min(sol_thcurrent.Pnet,0)*sol_thcurrent.PARAM.Resolution);
+    neg_energy_smart(i,1) = -sum(min(sol_smart.Pnet,0)*sol_smart.PARAM.Resolution);
 end
 %%
 expense_save_thcurrent = networth_with_ems_thcurrent - networth_without_ems_thcurrent;
 expense_save_smart = networth_with_ems_smart - networth_without_ems_smart;
 percent_save_thcurrent = -expense_save_thcurrent*100./networth_without_ems_thcurrent;
 percent_save_smart = -expense_save_smart*100./networth_without_ems_smart;
-a = table(percent_save_thcurrent,...
+a = table( neg_energy_thcurrent, ...
+            neg_energy_smart,...
+            percent_save_thcurrent,...
             percent_save_smart,...
             networth_with_ems_thcurrent,...
             networth_with_ems_smart,...
@@ -47,6 +50,36 @@ a = table(percent_save_thcurrent,...
 % get percentage profit and expense
 expense_case = a(a.networth_with_ems_thcurrent < 0 & a.networth_without_ems_thcurrent < 0,:);
 profit_case = a(a.networth_with_ems_thcurrent > 0 & a.networth_without_ems_thcurrent > 0,:);
+%%
+% energy < 0 hist plot
+f = figure('PaperPosition',[0 0 21 20/3],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(1,2,'TileSpacing','tight','Padding','tight');
+plot_case = a;
+nexttile;
+histogram(plot_case.neg_energy_thcurrent,10,'BinWidth',50,'Normalization','percentage')
+grid on
+title('Histogram of negative energy in EMS 2 when TOU 0 is used')
+xlabel('Negative energy (kWh)')
+ylabel('Percent')
+xticks(25:50:1250)
+xlim([0 700])
+ylim([0 100])
+yticks(0:20:100)
+
+nexttile;
+histogram(plot_case.neg_energy_smart,10,'BinWidth',50,'Normalization','percentage')
+grid on
+title('Histogram of negative energy in EMS 2 when TOU 1 is used')
+xlabel('Negative energy (kWh)')
+ylabel('Percent')
+xticks(25:50:1250)
+xlim([0 700])
+ylim([0 100])
+yticks(0:20:100)
+
+fontsize(0.6,'centimeters')
+print(f,'graph/EMS2/png/EMS2_neg_energy_plot','-dpng')
+print(f,'graph/EMS2/eps/EMS2_neg_energy_plot','-deps')
 
 %%
 % absolute plot
