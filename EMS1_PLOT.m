@@ -1,23 +1,19 @@
 clear;clc;
-filename = 'smart1_high_solar high_load_9'; % highest load
-%filename = 'smart1_high_solar high_load_13'; % highest save
+%filename = 'smart1_high_load_high_solar_20'; 
+filename = 'THcurrent_medium_load_low_solar_6'; 
+
 sol = load(strcat('solution/EMS1/',filename,'.mat')); 
 PARAM = sol.PARAM;
 
 %----------------prepare solution for plotting
 k = 384;
-Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
-Pload = sol.Pchg + PARAM.PL; % Load + Battery charge
+Pgen = sum(sol.Pdchg,2) + PARAM.PV; % PV + Battery discharge
+Pload = sum(sol.Pchg,2) + PARAM.PL; % Load + Battery charge
 Pnet_check = Pgen  - Pload;
 excess_gen = PARAM.PV - PARAM.PL;
 %end of prepare for solution for plotting
 expense = -min(0,sol.Pnet)*PARAM.Resolution.*PARAM.Buy_rate;
 expense_noems = -min(0,PARAM.PV-PARAM.PL)*PARAM.Resolution.*PARAM.Buy_rate;
-
-
-
-
-
 start_date = '2023-04-24';  %a start date for plotting graph
 start_date = datetime(start_date);
 end_date = start_date + PARAM.Horizon;
@@ -30,39 +26,48 @@ vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
 t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
 
-nexttile
 
-stairs(vect,[PARAM.Buy_rate],'LineWidth',1.2)
-hold on
+nexttile
+stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min-5 PARAM.battery.max+5])
+yticks(PARAM.battery.min:10:PARAM.battery.max)
 grid on
-legend('Buy rate','Location','northeastoutside')
-xlabel('Hour') 
-title('TOU','FontSize',24) 
-ylabel('TOU (THB)')
-ylim([0 8])
-yticks(0:2:8)
+hold on
+stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,1),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,1),'-r','LineWidth',1)
+yticks(0:10:40)
+ylim([0 40])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 1 (SoC)','FontSize',24)
+xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 
 
 nexttile
-
-stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
+stairs(vect,sol.soc(1:k,2),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
-ylim([35 75])
-yticks(40:10:70)
+ylim([PARAM.battery.min-5 PARAM.battery.max+5])
+yticks(PARAM.battery.min:10:PARAM.battery.max)
 grid on
 hold on
-stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
 hold on
 yyaxis right
-stairs(vect,sol.Pchg,'-b','LineWidth',1)
+stairs(vect,sol.Pchg(:,2),'-b','LineWidth',1)
 hold on 
-stairs(vect,sol.Pdchg,'-r','LineWidth',1)
-yticks(0:25:100)
+stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
+yticks(0:10:40)
+ylim([0 40])
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
 ylabel('Power (kW)')
-title('State of charge (SoC)','FontSize',24)
+title('State of charge 2 (SoC)','FontSize',24)
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -127,6 +132,7 @@ hold off
 nexttile
 stairs(vect,expense,'-b','LineWidth',1)
 ylabel('expense (THB)')
+ylim([0 50])
 yticks(0:10:50)
 hold on
 yyaxis right
@@ -170,6 +176,7 @@ hold off
 nexttile
 stairs(vect,expense_noems,'-b','LineWidth',1)
 ylabel('expense (THB)')
+ylim([0 50])
 yticks(0:10:50)
 hold on
 yyaxis right
@@ -184,9 +191,9 @@ yticks(0:1000:4000)
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS1/png/8_plot_',filename),'-dpng')
-print(f,strcat('graph/EMS1/eps/8_plot_',filename),'-deps')
+% fontsize(0.6,'centimeters')
+% print(f,strcat('graph/EMS1/png/8_plot_',filename),'-dpng')
+% print(f,strcat('graph/EMS1/eps/8_plot_',filename),'-deps')
 %%
 % 6 plot
 f = figure('PaperPosition',[0 0 21 20],'PaperOrientation','portrait','PaperUnits','centimeters');
@@ -307,9 +314,9 @@ ylim([0 3500])
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS1/png/6_plot_',filename),'-dpng')
-print(f,strcat('graph/EMS1/eps/6_plot_',filename),'-deps')
+% fontsize(0.6,'centimeters')
+% print(f,strcat('graph/EMS1/png/6_plot_',filename),'-dpng')
+% print(f,strcat('graph/EMS1/eps/6_plot_',filename),'-deps')
 
 
 %%

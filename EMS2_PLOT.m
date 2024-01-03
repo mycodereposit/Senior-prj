@@ -1,15 +1,14 @@
 clear;clc;
-filename = 'thcurrent_high_solar high_load_9'; % highest load
-%filename = 'thcurrent_high_solar low_load_11'; %highest profit
-%filename = 'thcurrent_high_solar low_load_7' ; %expense to profit
+%filename = 'smart1_high_load_high_solar_20'; 
+filename = 'THcurrent_low_load_low_solar_31'; 
 
 sol = load(strcat('solution/EMS2/',filename,'.mat')); 
 PARAM = sol.PARAM;
 
 %----------------prepare solution for plotting
 k = 384;
-Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
-Pload = sol.Pchg + PARAM.PL; % Load + Battery charge
+Pgen = sum(sol.Pdchg,2) + PARAM.PV; % PV + Battery discharge
+Pload = sum(sol.Pchg,2) + PARAM.PL; % Load + Battery charge
 Pnet_check = Pgen  - Pload;
 %end of prepare for solution for plotting
 [profit,expense,revenue] = GetExpense(sol.Pnet,PARAM.Buy_rate,PARAM.Sell_rate,PARAM.Resolution);
@@ -28,36 +27,46 @@ f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits
 t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
 
 nexttile
-colororder({'k','k','k','k'})
-stairs(vect,PARAM.Buy_rate,'-m','LineWidth',1.2)
-hold on
+stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min-5 PARAM.battery.max+5])
+yticks(PARAM.battery.min:10:PARAM.battery.max)
 grid on
-stairs(vect,PARAM.Sell_rate,'-k','LineWidth',1.2)
-legend('Buy rate','Sell rate','Location','northeastoutside')
-xlabel('Hour') 
-title('TOU') 
-ylabel('TOU (THB)')
-ylim([0 8])
-yticks(0:2:8)
+hold on
+stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,1),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,1),'-r','LineWidth',1)
+yticks(0:10:40)
+ylim([0 40])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 1 (SoC)','FontSize',24)
+xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 
 
 nexttile
-stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
+stairs(vect,sol.soc(1:k,2),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
-ylim([35 75])
+ylim([PARAM.battery.min-5 PARAM.battery.max+5])
+yticks(PARAM.battery.min:10:PARAM.battery.max)
 grid on
 hold on
-stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
 hold on
 yyaxis right
-stairs(vect,sol.Pchg,'-b','LineWidth',1)
+stairs(vect,sol.Pchg(:,2),'-b','LineWidth',1)
 hold on 
-stairs(vect,sol.Pdchg,'-r','LineWidth',1)
+stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
+yticks(0:10:40)
+ylim([0 40])
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
 ylabel('Power (kW)')
-title('State of charge (SoC)')
+title('State of charge 2 (SoC)','FontSize',24)
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -91,8 +100,8 @@ stairs(vect,min(0,sol.Pnet),'-r','LineWidth',1)
 legend('P_{net} > 0 (sold to grid)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
 title('P_{net} = PV + P_{dchg} - P_{chg} - P_{load}')
 xlabel('Hour')
-yticks(-100:25:50)
-ylim([-100 50])
+yticks(-100:25:100)
+ylim([-100 100])
 ylabel('P_{net} (kW)')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -185,9 +194,9 @@ ylim([-3500 1000])
 yticks(-3500:500:1000)
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS2/png/8_plot_',filename),'-dpng')
-print(f,strcat('graph/EMS2/eps/8_plot_',filename),'-deps')
+% fontsize(0.6,'centimeters')
+% print(f,strcat('graph/EMS2/png/8_plot_',filename),'-dpng')
+% print(f,strcat('graph/EMS2/eps/8_plot_',filename),'-deps')
 
 
 %%

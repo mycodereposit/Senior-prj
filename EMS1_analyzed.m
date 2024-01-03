@@ -2,11 +2,11 @@ clear;clc;
 
 dataset_detail = readtable('dataset/dataset_detail.csv');
 dataset_name = dataset_detail.name;
-pv_type = dataset_detail.pv_type;
+pv_type = dataset_detail.solar_type;
 load_type = dataset_detail.load_type;
 dataset_startdate = dataset_detail.start_date;
 
-for i = 1:48
+for i = 1:length(dataset_name)
     sol_thcurrent = load(strcat('solution/EMS1/','THcurrent','_',dataset_name{i},'.mat'));
     sol_smart = load(strcat('solution/EMS1/','smart1','_',dataset_name{i},'.mat'));
     
@@ -72,14 +72,14 @@ ylim([0 100])
 yticks(0:20:100)
 
 fontsize(0.6,'centimeters')
-print(f,'graph/EMS1/png/EMS1_neg_energy_plot','-dpng')
-print(f,'graph/EMS1/eps/EMS1_neg_energy_plot','-deps')
+% print(f,'graph/EMS1/png/EMS1_neg_energy_plot','-dpng')
+% print(f,'graph/EMS1/eps/EMS1_neg_energy_plot','-deps')
 
 %%
 % percentage histogram
-pv_list = {'low_solar','low_solar','high_solar','high_solar'};
-load_list  = {'high_load','low_load','high_load','low_load'};
-for i = 1:4
+pv_list = {'low_solar','low_solar','low_solar','high_solar','high_solar','high_solar'};
+load_list  = {'high_load','low_load','medium_load','high_load','low_load','medium_load'};
+for i = 1:length(pv_list)
     plot_case = a(strcmp(a.pv_type,pv_list{i}) & strcmp(a.load_type,load_list{i}),:);
     f = figure('Position', [0 0 2480 1000]);
     t = tiledlayout(2,2);
@@ -128,16 +128,14 @@ for i = 1:4
     yticks(0:20:100)
     ylim([0 100])
     xlim([0 100])
-    fontsize(20,'points')
-    exportgraphics(t,strcat('graph/EMS1/png/',pv_list{i},'_',load_list{i},'_bar_percent_hist.png'))
-    exportgraphics(t,strcat('graph/EMS1/eps/',pv_list{i},'_',load_list{i},'_bar_percent_hist.eps'))
+    % fontsize(20,'points')
+    % exportgraphics(t,strcat('graph/EMS1/png/',pv_list{i},'_',load_list{i},'_bar_percent_hist.png'))
+    % exportgraphics(t,strcat('graph/EMS1/eps/',pv_list{i},'_',load_list{i},'_bar_percent_hist.eps'))
 end
 %% 
 % actual hist
 
-pv_list = {'low_solar','low_solar','high_solar','high_solar'};
-load_list  = {'high_load','low_load','high_load','low_load'};
-for i = 1:4
+for i = 1:length(pv_list)
     
     plot_case = a(strcmp(a.pv_type,pv_list{i}) & strcmp(a.load_type,load_list{i}),:);
 
@@ -192,9 +190,9 @@ for i = 1:4
     yticks(0:20:100)
     ylim([0 100])
     xlim([0 1200])
-    fontsize(20,'points')
-    exportgraphics(t,strcat('graph/EMS1/png/',pv_list{i},'_',load_list{i},'_bar_actual_hist.png'))
-    exportgraphics(t,strcat('graph/EMS1/eps/',pv_list{i},'_',load_list{i},'_bar_actual_hist.eps'))
+    % fontsize(20,'points')
+    % exportgraphics(t,strcat('graph/EMS1/png/',pv_list{i},'_',load_list{i},'_bar_actual_hist.png'))
+    % exportgraphics(t,strcat('graph/EMS1/eps/',pv_list{i},'_',load_list{i},'_bar_actual_hist.eps'))
     
     
 

@@ -2,12 +2,12 @@ clear;clc;
 
 dataset_detail = readtable('dataset/dataset_detail.csv');
 dataset_name = dataset_detail.name;
-pv_type = dataset_detail.pv_type;
+pv_type = dataset_detail.solar_type;
 load_type = dataset_detail.load_type;
 dataset_startdate = dataset_detail.start_date;
 
 
-for i = 1:48
+for i = 1:length(dataset_name)
     sol_thcurrent = load(strcat('solution/EMS2/','THcurrent','_',dataset_name{i},'.mat'));
     sol_smart = load(strcat('solution/EMS2/','smart1','_',dataset_name{i},'.mat'));
     
@@ -77,16 +77,16 @@ xlim([0 700])
 ylim([0 100])
 yticks(0:20:100)
 
-fontsize(0.6,'centimeters')
-print(f,'graph/EMS2/png/EMS2_neg_energy_plot','-dpng')
-print(f,'graph/EMS2/eps/EMS2_neg_energy_plot','-deps')
+% fontsize(0.6,'centimeters')
+% print(f,'graph/EMS2/png/EMS2_neg_energy_plot','-dpng')
+% print(f,'graph/EMS2/eps/EMS2_neg_energy_plot','-deps')
 
 %%
 % absolute plot
 
-pv_list = {'low_solar','low_solar','high_solar','high_solar'};
-load_list  = {'high_load','low_load','high_load','low_load'};
-for i = 1:4
+pv_list = {'low_solar','low_solar','low_solar','high_solar','high_solar','high_solar'};
+load_list  = {'high_load','low_load','medium_load','high_load','low_load','medium_load'};
+for i = 1:length(pv_list)
     plot_case = a(strcmp(a.pv_type,pv_list{i}) & strcmp(a.load_type,load_list{i}),:);
     f = figure('Position', [0 0 2480 1000]);
     t = tiledlayout(2,2);
@@ -133,16 +133,15 @@ for i = 1:4
     xlim([100 900])
     ylim([0 100])
     yticks(0:20:100)
-    fontsize(20,'points')
-    exportgraphics(t,strcat('graph/EMS2/png/',pv_list{i},'_',load_list{i},'_bar_percent_hist.png'))
-    exportgraphics(t,strcat('graph/EMS2/eps/',pv_list{i},'_',load_list{i},'_bar_percent_hist.eps'))
+    % fontsize(20,'points')
+    % exportgraphics(t,strcat('graph/EMS2/png/',pv_list{i},'_',load_list{i},'_bar_percent_hist.png'))
+    % exportgraphics(t,strcat('graph/EMS2/eps/',pv_list{i},'_',load_list{i},'_bar_percent_hist.eps'))
 end
 %%
 % percentage histogram
-pv_list = {'low_solar','low_solar','high_solar','high_solar'};
-load_list  = {'high_load','low_load','high_load','low_load'};
 
-for i = 1:4
+
+for i = 1:length(pv_list)
     
     plot_case = a(strcmp(a.pv_type,pv_list{i}) & strcmp(a.load_type,load_list{i}),:);
 
@@ -202,39 +201,3 @@ end
 
 
 
-%%
-start_date = '2023-04-24';  %a start date for plotting graph
-start_date = datetime(start_date);
-end_date = start_date + 4;
-t1 = start_date; t2 = end_date; 
-vect = t1:minutes(15):t2 ; vect(end) = []; vect = vect';
-b = tiledlayout(1,2);
-nexttile
-stairs(vect,sol_thcurrent.PARAM.Buy_rate,'-b','LineWidth',1.2)
-hold on
-grid on
-stairs(vect,sol_thcurrent.PARAM.Sell_rate,'-r','LineWidth',1.2)
-legend('Buy rate','Sell rate','Location','northeastoutside','FontSize',20)
-%set(gca,'YLim',[0 6])
-xlabel('Hour','FontSize',20) 
-title('TOU 0','FontSize',20) 
-ylabel('TOU (THB)','FontSize',20)
-xticks(start_date:hours(1):end_date)
-ylim([0 8])
-xlim([start_date start_date+1])
-datetick('x','HH','keepticks')
-
-nexttile
-stairs(vect,sol_smart.PARAM.Buy_rate,'-b','LineWidth',1.2)
-hold on
-grid on
-stairs(vect,sol_smart.PARAM.Sell_rate,'-r','LineWidth',1.2)
-legend('Buy rate','Sell rate','Location','northeastoutside','FontSize',20)
-%set(gca,'YLim',[0 6])
-xlabel('Hour','FontSize',20) 
-title('TOU 1','FontSize',20) 
-ylabel('TOU (THB)','FontSize',20)
-ylim([0 8])
-xticks(start_date:hours(1):end_date)
-xlim([start_date start_date+1])
-datetick('x','HH','keepticks')
