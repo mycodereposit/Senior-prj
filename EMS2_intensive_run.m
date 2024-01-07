@@ -40,14 +40,14 @@ for i = 1:length(dataset_name)
     %parameter part
     
     
-    PARAM.battery.charge_effiency = [0.95 0.95]; %bes charge eff
-    PARAM.battery.discharge_effiency = [0.95*0.93 0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
-    PARAM.battery.discharge_rate = [50 50]; % kW max discharge rate
-    PARAM.battery.charge_rate = [50 50]; % kW max charge rate
-    PARAM.battery.actual_capacity = [125 125]; % kWh soc_capacity 
-    PARAM.battery.initial = [50 50]; % userdefined int 0-100 %
-    PARAM.battery.min = [20 20]; %min soc userdefined int 0-100 %
-    PARAM.battery.max = [80 80]; %max soc userdefined int 0-100 %
+    PARAM.battery.charge_effiency = [0.95]; %bes charge eff
+    PARAM.battery.discharge_effiency = [0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+    PARAM.battery.discharge_rate = [50]; % kW max discharge rate
+    PARAM.battery.charge_rate = [50]; % kW max charge rate
+    PARAM.battery.actual_capacity = [125]; % kWh soc_capacity 
+    PARAM.battery.initial = [50]; % userdefined int 0-100 %
+    PARAM.battery.min = [20]; %min soc userdefined int 0-100 %
+    PARAM.battery.max = [80]; %max soc userdefined int 0-100 %
     PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
     % end of parameter part
     % optimize var = [Pnet u Pdchg xdchg Pchg xchg soc Pac Xac1 Xac2 Xac3 Xac4]
@@ -88,10 +88,10 @@ for i = 1:length(dataset_name)
     soccons = optimconstr(k+1,PARAM.battery.num_batt);
     
     soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;
-    for i = 1:PARAM.battery.num_batt
-        soccons(2:k+1,i) = soc(2:k+1,i)  == soc(1:k,i) + ...
-                                 (PARAM.battery.charge_effiency(:,i)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,i))*Pchg(1:k,i) ...
-                                    - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,i)*PARAM.battery.actual_capacity(:,i)))*Pdchg(1:k,i);
+    for j = 1:PARAM.battery.num_batt
+        soccons(2:k+1,j) = soc(2:k+1,j)  == soc(1:k,j) + ...
+                                 (PARAM.battery.charge_effiency(:,j)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,j))*Pchg(1:k,j) ...
+                                    - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,j)*PARAM.battery.actual_capacity(:,j)))*Pdchg(1:k,j);
         
     end
     prob.Constraints.soccons = soccons;
@@ -102,5 +102,5 @@ for i = 1:length(dataset_name)
     sol = solve(prob,'Options',options);
     sol.dataset_name = dataset_name{i};
     sol.PARAM = PARAM;
-    save(strcat('solution/EMS2/2batt/',TOU_CHOICE,'_',dataset_name{i},'.mat'),'-struct','sol')
+    save(strcat('solution/EMS2/1batt/',TOU_CHOICE,'_',dataset_name{i},'.mat'),'-struct','sol')
 end

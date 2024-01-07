@@ -10,9 +10,9 @@ options = optimoptions('intlinprog','MaxTime',40);
 PARAM.Horizon = 4;  % horizon to optimize (day)
 PARAM.Resolution = 15; %sampling period(min) use multiple of 15. int 
 
-TOU_CHOICE = 'smart1' ; % choice for tou 
+%TOU_CHOICE = 'smart1' ; % choice for tou 
 %TOU_CHOICE = 'nosell' ;
-%TOU_CHOICE = 'THcurrent' ;
+TOU_CHOICE = 'THcurrent' ;
 PARAM.PV_capacity = 50; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
@@ -86,10 +86,10 @@ for i = 1:length(dataset_name)
     soccons = optimconstr(k+1,PARAM.battery.num_batt);
     
     soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;
-    for i = 1:PARAM.battery.num_batt
-        soccons(2:k+1,i) = soc(2:k+1,i)  == soc(1:k,i) + ...
-                                 (PARAM.battery.charge_effiency(:,i)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,i))*Pchg(1:k,i) ...
-                                    - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,i)*PARAM.battery.actual_capacity(:,i)))*Pdchg(1:k,i);
+    for j = 1:PARAM.battery.num_batt
+        soccons(2:k+1,j) = soc(2:k+1,j)  == soc(1:k,j) + ...
+                                 (PARAM.battery.charge_effiency(:,j)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,j))*Pchg(1:k,j) ...
+                                    - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,j)*PARAM.battery.actual_capacity(:,j)))*Pdchg(1:k,j);
         
     end
     prob.Constraints.soccons = soccons;
