@@ -39,16 +39,30 @@ for i = 1:length(dataset_name)
     
     %parameter part
     
-    
+    %for 1 batt 
+    % PARAM.battery.charge_effiency = [0.95]; %bes charge eff
+    % PARAM.battery.discharge_effiency = [0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+    % PARAM.battery.discharge_rate = [60]; % kW max discharge rate
+    % PARAM.battery.charge_rate = [60]; % kW max charge rate
+    % PARAM.battery.actual_capacity = [250]; % kWh soc_capacity 
+    % PARAM.battery.initial = [50]; % userdefined int 0-100 %
+    % PARAM.battery.min = [20]; %min soc userdefined int 0-100 %
+    % PARAM.battery.max = [80]; %max soc userdefined int 0-100 %
+    %end of 1 batt
+    %for  2 batt
     PARAM.battery.charge_effiency = [0.95 0.95]; %bes charge eff
     PARAM.battery.discharge_effiency = [0.95*0.93 0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
-    PARAM.battery.discharge_rate = [50 50]; % kW max discharge rate
-    PARAM.battery.charge_rate = [50 50]; % kW max charge rate
+    PARAM.battery.discharge_rate = [30 30]; % kW max discharge rate
+    PARAM.battery.charge_rate = [30 30]; % kW max charge rate
     PARAM.battery.actual_capacity = [125 125]; % kWh soc_capacity 
     PARAM.battery.initial = [50 50]; % userdefined int 0-100 %
     PARAM.battery.min = [20 20]; %min soc userdefined int 0-100 %
     PARAM.battery.max = [80 80]; %max soc userdefined int 0-100 %
+    %end of 2 batt
+
     PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
+
+
     % end of parameter part
     % optimize var = [Pnet u Pdchg xdchg Pchg xchg soc Pac Xac1 Xac2 Xac3 Xac4]
     
