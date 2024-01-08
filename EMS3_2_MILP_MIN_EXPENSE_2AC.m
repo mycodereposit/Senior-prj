@@ -1,23 +1,19 @@
 clear; clc;
 options = optimoptions('intlinprog','MaxTime',120);
-% high load case : 2023-04-18 - 2023-04-22
-% low  load case : 2023-05-26 - 2023-05-30
-% high solar case: 2023-05-12 - 2023-05-16
-% low  solar case: 2023-04-24 - 2023-04-28
+
 
 %--- user-input parameter ----
 PARAM.Horizon = 4;  % horizon to optimize (day)
 PARAM.Resolution = 15; %sampling period(min) use multiple of 15. int 
 %--- four extreme cases
-%name = 'high_solar high_load_9.csv'; % high load
-%name = 'low_solar low_load_4.csv';  % low load
-name = 'high_solar low_load_5.csv'; % high solar
-%name = 'low_solar high_load_5.csv'; % low  solar
+
+name = 'low_load_low_solar_9.csv';
+
 
 TOU_CHOICE = 'smart1' ; % choice for tou 
 %TOU_CHOICE = 'nosell' ;
 %TOU_CHOICE = 'THcurrent' ;
-PARAM.PV.installed_capacity = 16; % (kw) PV sizing for this EMS
+PARAM.PV_capacity = 16; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
 
@@ -33,7 +29,7 @@ k = h*fs; %length of variable
 
 %get solar/load profile and buy/sell rate
 [PARAM.PV,PARAM.PL] = loadPVandPLcsv(PARAM.Resolution,name);
-PARAM.PV = PARAM.PV*2/6; %scale pv size to 16 kW
+PARAM.PV = PARAM.PV*(PARAM.PV_capacity/48); % divide by 8 kW * 6 (scaling factor) = 48 
 [PARAM.Buy_rate,PARAM.Sell_rate] = getBuySellrate(fs,Horizon,TOU_CHOICE);
 %end of solar/load profile and buy/sell rate
 
@@ -45,16 +41,30 @@ PARAM.ACschedule = getSchedule(PARAM.schedule_start,PARAM.schedule_stop,PARAM.Re
 %get schedule for AC
 
 
-PARAM.battery.charge_effiency = 0.95; %bes charge eff
-PARAM.battery.discharge_effiency = 0.95*0.93; %  bes discharge eff note inverter eff 0.93-0.96
-PARAM.battery.discharge_rate = 45; % kW max discharge rate
-PARAM.battery.charge_rate = 75; % kW max charge rate
-PARAM.battery.usable_capacity = 150; % kWh soc_capacity 
-PARAM.battery.initial = 50; % userdefined int 0-100 %
-PARAM.battery.min = 40; %min soc userdefined int 0-100 %
-PARAM.battery.max = 70; %max soc userdefined int 0-100 %
+%for 1 batt 
+% PARAM.battery.charge_effiency = [0.95]; %bes charge eff
+% PARAM.battery.discharge_effiency = [0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+% PARAM.battery.discharge_rate = [60]; % kW max discharge rate
+% PARAM.battery.charge_rate = [60]; % kW max charge rate
+% PARAM.battery.actual_capacity = [250]; % kWh soc_capacity 
+% PARAM.battery.initial = [50]; % userdefined int 0-100 %
+% PARAM.battery.min = [20]; %min soc userdefined int 0-100 %
+% PARAM.battery.max = [80]; %max soc userdefined int 0-100 %
+%end of 1 batt
+%for  2 batt
+PARAM.battery.charge_effiency = [0.95 0.95]; %bes charge eff
+PARAM.battery.discharge_effiency = [0.95*0.93 0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+PARAM.battery.discharge_rate = [30 30]; % kW max discharge rate
+PARAM.battery.charge_rate = [30 30]; % kW max charge rate
+PARAM.battery.actual_capacity = [125 125]; % kWh soc_capacity 
+PARAM.battery.initial = [50 50]; % userdefined int 0-100 %
+PARAM.battery.min = [20 20]; %min soc userdefined int 0-100 %
+PARAM.battery.max = [80 80]; %max soc userdefined int 0-100 %
+%end of 2 batt
 
-PARAM.battery.deviation_penalty_weight = 0.1; %max soc userdefined int 0-100 %
+PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
+
+PARAM.battery.deviation_penalty_weight = 0.1; 
 PARAM.AClab.encourage_weight = 2; %(THB) weight for encourage lab ac usage
 PARAM.ACstudent.encourage_weight = 1; %(THB) weight for encourage student ac usage
 PARAM.AClab.Paclab_rate = 3.71*3; % (kw) air conditioner input Power for lab
@@ -67,21 +77,28 @@ PARAM.Puload = min(PARAM.PL) ;% (kW) power of uncontrollable load
 
 Pnet =      optimvar('Pnet',k,'LowerBound',-inf,'UpperBound',inf);
 u =         optimvar('u',k,'LowerBound',0,'UpperBound',inf);
-Pdchg =     optimvar('Pdchg',k,'LowerBound',0,'UpperBound',inf);
-xdchg =     optimvar('xdchg',k,'LowerBound',0,'UpperBound',1,'Type','integer');
-Pchg =      optimvar('Pchg',k,'LowerBound',0,'UpperBound',inf);
-xchg =      optimvar('xchg',k,'LowerBound',0,'UpperBound',1,'Type','integer');
-soc =       optimvar('soc',k+1,'LowerBound',PARAM.battery.min,'UpperBound',PARAM.battery.max);
+Pdchg =     optimvar('Pdchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',inf);
+xdchg =     optimvar('xdchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',1,'Type','integer');
+Pchg =      optimvar('Pchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',inf);
+xchg =      optimvar('xchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',1,'Type','integer');
+soc =       optimvar('soc',k+1,PARAM.battery.num_batt,'LowerBound',ones(k+1,PARAM.battery.num_batt).*PARAM.battery.min,'UpperBound',ones(k+1,PARAM.battery.num_batt).*PARAM.battery.max);
 Pac_lab =       optimvar('Pac_lab',k,'LowerBound',0,'UpperBound',inf);
 Pac_student =       optimvar('Pac_student',k,'LowerBound',0,'UpperBound',inf);
 Xac_lab =      optimvar('Xac_lab',k,4,'LowerBound',0,'UpperBound',1,'Type','integer');
 Xac_student =      optimvar('Xac_student',k,4,'LowerBound',0,'UpperBound',1,'Type','integer');
 obj_fcn = sum(u) - PARAM.AClab.encourage_weight*sum( PARAM.ACschedule.*sum(Xac_lab,2))... 
-                 - PARAM.ACstudent.encourage_weight*sum(PARAM.ACschedule.*sum(Xac_student,2) )...
-                 + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max - soc)/(PARAM.battery.max - PARAM.battery.min));
-                
+                     - PARAM.ACstudent.encourage_weight*sum(PARAM.ACschedule.*sum(Xac_student,2) )...
+                     + PARAM.battery.deviation_penalty_weight*sum( sum( (PARAM.battery.max.*(ones(k+1,PARAM.battery.num_batt)) - soc)./(ones(k+1,PARAM.battery.num_batt).*(PARAM.battery.max - PARAM.battery.min)),2) );
+
+
+% obj_fcn =           sum(u) ...
+%                  - PARAM.AClab.encourage_weight*sum( PARAM.ACschedule.*sum(Xac_lab,2))... 
+%                  - PARAM.ACstudent.encourage_weight*sum(PARAM.ACschedule.*sum(Xac_student,2) )...
+%                  + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max(:,1) - soc(:,1))/(PARAM.battery.max(:,1) - PARAM.battery.min(:,1)))...
+%                  + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max(:,2) - soc(:,2))/(PARAM.battery.max(:,2) - PARAM.battery.min(:,2)));
+
 prob =      optimproblem('Objective',obj_fcn);
-%prob =      optimproblem('Objective',sum(u + v - (ACschedule*lambda_lab).*sum(Xac_lab,2) - (ACschedule*lambda_student).*sum(Xac_student,2) ));
+
 %constraint part
 
 %---------- epigraph constraint for buying electricity
@@ -101,30 +118,34 @@ prob.Constraints.ACstudentcons1 = sum(Xac_student,2) <= 1;
 
 prob.Constraints.ACstudentcons2 = sum(Xac_student,2) >= 0;
 
-%---------- Battery constraint ----------
-prob.Constraints.chargecons = Pchg  <= xchg*PARAM.battery.charge_rate;
+%--battery constraint
 
-prob.Constraints.dischargecons = Pdchg  <= xdchg*PARAM.battery.discharge_rate;
+prob.Constraints.chargeconsbatt = Pchg <= xchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.charge_rate);
 
-prob.Constraints.NosimultDchgAndChgcons1 = xchg + xdchg >= 0;
+prob.Constraints.dischargeconsbatt = Pdchg   <= xdchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.discharge_rate);
 
-prob.Constraints.NosimultDchgAndChgcons2 = xchg + xdchg <= 1;
+prob.Constraints.NosimultDchgAndChgbatt = xchg + xdchg >= 0;
 
-%------------ Pnet constraint ----------
+prob.Constraints.NosimultDchgAndChgconsbatt1 = xchg + xdchg <= 1;
 
-prob.Constraints.powercons = Pnet  == PARAM.PV + Pdchg - PARAM.Puload - Pac_lab - Pchg - Pac_student;
+%--Pnet constraint
+prob.Constraints.powercons = Pnet == PARAM.PV + sum(Pdchg,2) - PARAM.PL - sum(Pchg,2) - Pac_lab - Pac_student;
 
 %preservePnet = Pnet == 0;
 
 
 
-%----------- soc dynamic constraint
-prob.Constraints.soccons = optimconstr(k+1);
-prob.Constraints.soccons(1) = soc(1)  == PARAM.battery.initial ;
-prob.Constraints.soccons(2:k+1) = soc(2:k+1)  == soc(1:k) + ...
-                                 (PARAM.battery.charge_effiency*100*PARAM.Resolution/PARAM.battery.usable_capacity)*Pchg(1:k) ...
-                                 - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency*PARAM.battery.usable_capacity))*Pdchg(1:k);
+%--soc dynamic constraint 
+soccons = optimconstr(k+1,PARAM.battery.num_batt);
 
+soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;
+for j = 1:PARAM.battery.num_batt
+    soccons(2:k+1,j) = soc(2:k+1,j)  == soc(1:k,j) + ...
+                             (PARAM.battery.charge_effiency(:,j)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,j))*Pchg(1:k,j) ...
+                                - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,j)*PARAM.battery.actual_capacity(:,j)))*Pdchg(1:k,j);
+    
+end
+prob.Constraints.soccons = soccons;
 
 %assign constraint and solve
 
@@ -133,7 +154,7 @@ sol = solve(prob,'Options',options);
 %%
 % ------------ prepare solution for plotting
 
-Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
+Pgen = sum(sol.Pdchg,2) + PARAM.PV; % PV + Battery discharge
 Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
 Pac = sol.Pac_lab + sol.Pac_student;
 excess_gen = PARAM.PV - Pload;
@@ -151,20 +172,20 @@ vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
 
 f = figure('PaperPosition',[0 0 21 20],'PaperOrientation','portrait','PaperUnits','centimeters');
-t = tiledlayout(3,2,'TileSpacing','tight','Padding','tight');
+t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
 
 colororder({'r','r','r','r'})
 nexttile
 stairs(vect,PARAM.PV,'-b','LineWidth',1.2) 
 ylabel('Solar power (kW)')
-ylim([0 10])
-yticks(0:2.5:10)
+ylim([0 20])
+yticks(0:5:20)
 grid on
 hold on
 yyaxis right
 stairs(vect,Pload,'-r','LineWidth',1.2)
-ylim([0 10])
-yticks(0:2.5:10)
+ylim([0 20])
+yticks(0:5:20)
 ylabel('Load (kW)')
 legend('Solar','load','Location','northeastoutside')
 title('Solar generation and load consumption (P_{load} = P_{uload} + P_{ac,s} + P_{ac,m})')
@@ -174,45 +195,87 @@ datetick('x','HH','keepticks')
 hold off
 
 nexttile
-stairs(vect,sol.soc(1:384),'k','LineWidth',1.5) 
-ylabel('SoC (%)')
-ylim([35 75])
-hold on
-stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','LineWidth',1.5,'HandleVisibility','off') 
-grid on
-hold on
-yyaxis right
-stairs(vect,Pload,'-r','LineWidth',1.2)
-ylim([0 10])
-
-yticks(0:2.5:10)
-ylabel('Load (kW)')
-legend('SoC','Load','Location','northeastoutside')
-title('State of charge (SoC) and load consumption (P_{uload} + P_{ac,s} + P_{ac,m})')
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-
-nexttile
 hold all
 stairs(vect,excess_gen,'-k','LineWidth',1.2) 
 grid on
-ylim([-10 10])
-yticks(-10:5:10)
+ylim([-20 20])
+yticks(-20:5:20)
 ylabel('Excess power (kW)')
 yyaxis right 
-stairs(vect,sol.xchg,'-b','LineWidth',1)
-stairs(vect,-sol.xdchg,'-r','LineWidth',1)
+stairs(vect,sol.xchg(:,1),'-b','LineWidth',1)
+stairs(vect,-sol.xdchg(:,1),'-r','LineWidth',1)
 legend('Excess power','x_{chg}','x_{dchg}','Location','northeastoutside')
-title('Excess power = P_{pv} - P_{load} and Battery charge/discharge status')
-
+title('Excess power = P_{pv} - P_{load} and Battery #1 charge/discharge status')
 xlabel('Hour')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 yticks(-2:1:2)
 ylim([-1.5,1.5])
 hold off
+
+nexttile
+hold all
+stairs(vect,excess_gen,'-k','LineWidth',1.2) 
+grid on
+ylim([-20 20])
+yticks(-20:5:20)
+ylabel('Excess power (kW)')
+yyaxis right 
+stairs(vect,sol.xchg(:,2),'-b','LineWidth',1)
+stairs(vect,-sol.xdchg(:,2),'-r','LineWidth',1)
+legend('Excess power','x_{chg}','x_{dchg}','Location','northeastoutside')
+title('Excess power = P_{pv} - P_{load} and Battery #2 charge/discharge status')
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+yticks(-2:1:2)
+ylim([-1.5,1.5])
+hold off
+
+
+nexttile
+stairs(vect,sol.soc(1:k,1),'k','LineWidth',1.5) 
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,1)-5 PARAM.battery.max(:,1)+5])
+yticks(PARAM.battery.min(:,1):10:PARAM.battery.max(:,1))
+hold on
+stairs(vect,[PARAM.battery.min(:,1)*ones(k,1),PARAM.battery.max(:,1)*ones(k,1)],'--m','LineWidth',1.5,'HandleVisibility','off') 
+grid on
+hold on
+yyaxis right
+stairs(vect,Pload,'-r','LineWidth',1.2)
+ylim([0 20])
+yticks(0:5:20)
+ylabel('Load (kW)')
+legend('SoC','Load','Location','northeastoutside')
+title('State of charge 1 and load consumption (P_{uload} + P_{ac,s} + P_{ac,m})')
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+nexttile
+stairs(vect,sol.soc(1:k,2),'k','LineWidth',1.5) 
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,2)-5 PARAM.battery.max(:,2)+5])
+yticks(PARAM.battery.min(:,2):10:PARAM.battery.max(:,2))
+hold on
+stairs(vect,[PARAM.battery.min(:,2)*ones(k,1),PARAM.battery.max(:,2)*ones(k,1)],'--m','LineWidth',1.5,'HandleVisibility','off') 
+grid on
+hold on
+yyaxis right
+stairs(vect,Pload,'-r','LineWidth',1.2)
+ylim([0 20])
+yticks(0:5:20)
+ylabel('Load (kW)')
+legend('SoC','Load','Location','northeastoutside')
+title('State of charge 2 and load consumption (P_{uload} + P_{ac,s} + P_{ac,m})')
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+hold off
+
+
 
 nexttile
 stairs(vect,sol.Pac_lab*100/PARAM.AClab.Paclab_rate,'-r','LineWidth',1.2)
@@ -223,7 +286,7 @@ hold on
 grid on
 yyaxis right
 stairs(vect,PARAM.ACschedule,'-.k','LineWidth',1.2)
-ylim([0 1.5])
+ylim([0 1.2])
 yticks([0 1])
 legend('AC level','ACschedule')
 title('Lab AC level')
@@ -240,8 +303,8 @@ stairs(vect,min(0,sol.Pnet),'-b','LineWidth',1.2)
 legend('P_{net} > 0 (curtail)','P_{net} < 0 (bought from grid)','Location','northeastoutside')
 title('P_{net} = PV + P_{dchg} - P_{chg} - P_{load}')
 xlabel('Hour')
-ylim([-20 10])
-yticks(-25:5:10)
+ylim([-100 50])
+yticks(-100:10:50)
 ylabel('P_{net} (kW)')
 xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
@@ -258,7 +321,7 @@ grid on
 yyaxis right
 stairs(vect,PARAM.ACschedule,'-.k','LineWidth',1.2)
 yticks([0 1])
-ylim([0 1.5])
+ylim([0 1.2])
 legend('AC level','ACschedule')
 title('Student AC level')
 xlabel('Hour')
@@ -266,7 +329,6 @@ xticks(start_date:hours(3):end_date)
 datetick('x','HH','keepticks')
 hold off
 
-fontsize(0.6,'centimeters')
 
 
 function schedule = getSchedule(start,stop,Resolution,Horizon)

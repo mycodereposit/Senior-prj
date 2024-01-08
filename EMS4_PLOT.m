@@ -10,7 +10,7 @@ PARAM = sol.PARAM;
 % ------------ prepare solution for plotting
 
 Pgen = sol.Pdchg + PARAM.PV; % PV + Battery discharge
-Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load + Battery charge
+Pload = sol.Pac_lab + PARAM.Puload + sol.Pac_student; % Load 
 Pac = sol.Pac_lab + sol.Pac_student;
 excess_gen = PARAM.PV - Pload;
 %Pnet_check = Pgen  - Pload;

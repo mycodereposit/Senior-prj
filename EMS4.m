@@ -14,9 +14,7 @@ name = 'high_solar high_load_9.csv'; % high load
 %name = 'high_solar low_load_5.csv'; % high solar
 %name = 'low_solar high_load_5.csv'; % low  solar
 
-TOU_CHOICE = 'smart1' ; % choice for tou 
-%TOU_CHOICE = 'nosell' ;
-%TOU_CHOICE = 'THcurrent' ;
+
 PARAM.PV.installed_capacity = 16; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 

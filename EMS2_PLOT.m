@@ -21,10 +21,12 @@ end_date = start_date + PARAM.Horizon;
 t1 = start_date; t2 = end_date; 
 vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
+
 %%
-% 8 plot
+
+% 2 battery only
 f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
-t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
+t = tiledlayout(4,1,'TileSpacing','tight','Padding','tight');
 
 nexttile
 stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
@@ -64,6 +66,84 @@ hold on
 stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
 yticks(0:10:PARAM.battery.charge_rate+10)
 ylim([0 PARAM.battery.charge_rate+10])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 2 (SoC)','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+nexttile
+stairs(vect,sol.Pchg(:,1) - sol.Pchg(:,2),'-k','LineWidth',1.5)
+ylabel('P_{chg,1} - P_{chg,2} (kW)')
+grid on
+yticks(-(PARAM.battery.charge_rate+10):10:PARAM.battery.charge_rate+10)
+ylim([-(PARAM.battery.charge_rate+10) PARAM.battery.charge_rate+10])
+title('P_{chg,1} - P_{chg,2}','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+nexttile
+stairs(vect,sol.Pdchg(:,1) - sol.Pdchg(:,2),'-k','LineWidth',1.5)
+ylabel('P_{dchg,1} - P_{dchg,2} (kW)')
+grid on
+yticks(-(PARAM.battery.discharge_rate+10):10:PARAM.battery.discharge_rate+10)
+ylim([-(PARAM.battery.discharge_rate+10) PARAM.battery.discharge_rate+10])
+title('P_{dchg,1} - P_{dchg,2}','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+% fontsize(0.6,'centimeters')
+% 
+% print(f,strcat('graph/EMS2/png/battery_',filename),'-dpng')
+% print(f,strcat('graph/EMS2/eps/battery_',filename),'-deps')
+%%
+% 8 plot
+f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
+
+nexttile
+stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,1)-5 PARAM.battery.max(:,1)+5])
+yticks(PARAM.battery.min(:,1):10:PARAM.battery.max(:,1))
+grid on
+hold on
+stairs(vect,[PARAM.battery.min(:,1)*ones(384,1),PARAM.battery.max(:,1)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,1),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,1),'-r','LineWidth',1)
+yticks(0:10:PARAM.battery.charge_rate(:,1)+10)
+ylim([0 PARAM.battery.charge_rate(:,1)+10])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 1 (SoC)','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+nexttile
+stairs(vect,sol.soc(1:k,2),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,2)-5 PARAM.battery.max(:,2)+5])
+yticks(PARAM.battery.min(:,2):10:PARAM.battery.max(:,2))
+grid on
+hold on
+stairs(vect,[PARAM.battery.min(:,2)*ones(384,1),PARAM.battery.max(:,2)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,2),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
+yticks(0:10:PARAM.battery.charge_rate(:,2)+10)
+ylim([0 PARAM.battery.charge_rate(:,2)+10])
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
 ylabel('Power (kW)')
 title('State of charge 2 (SoC)','FontSize',24)

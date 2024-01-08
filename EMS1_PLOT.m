@@ -1,8 +1,8 @@
 clear;clc;
 %filename = 'smart1_high_load_high_solar_20'; 
-filename = 'THcurrent_medium_load_low_solar_6'; 
+filename = 'smart1_high_load_high_solar_2'; 
 
-sol = load(strcat('solution/EMS1/',filename,'.mat')); 
+sol = load(strcat('solution/EMS1/2batt/',filename,'.mat')); 
 PARAM = sol.PARAM;
 
 %----------------prepare solution for plotting
@@ -21,27 +21,28 @@ end_date = start_date + PARAM.Horizon;
 t1 = start_date; t2 = end_date; 
 vect = t1:minutes(PARAM.Resolution*60):t2 ; vect(end) = []; vect = vect';
 
-%%
-% 8 plot
-f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
-t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
 
+
+%%
+% 2 battery only
+f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(4,1,'TileSpacing','tight','Padding','tight');
 
 nexttile
 stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
-ylim([PARAM.battery.min-5 PARAM.battery.max+5])
-yticks(PARAM.battery.min:10:PARAM.battery.max)
+ylim([PARAM.battery.min(:,1)-5 PARAM.battery.max(:,1)+5])
+yticks(PARAM.battery.min(:,1):10:PARAM.battery.max(:,1))
 grid on
 hold on
-stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+stairs(vect,[PARAM.battery.min(:,1)*ones(384,1),PARAM.battery.max(:,1)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
 hold on
 yyaxis right
 stairs(vect,sol.Pchg(:,1),'-b','LineWidth',1)
 hold on 
 stairs(vect,sol.Pdchg(:,1),'-r','LineWidth',1)
-yticks(0:10:40)
-ylim([0 40])
+yticks(0:10:PARAM.battery.charge_rate(:,1)+10)
+ylim([0 PARAM.battery.charge_rate(:,1)+10])
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
 ylabel('Power (kW)')
 title('State of charge 1 (SoC)','FontSize',24)
@@ -53,18 +54,98 @@ datetick('x','HH','keepticks')
 nexttile
 stairs(vect,sol.soc(1:k,2),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
-ylim([PARAM.battery.min-5 PARAM.battery.max+5])
-yticks(PARAM.battery.min:10:PARAM.battery.max)
+ylim([PARAM.battery.min(:,2)-5 PARAM.battery.max(:,2)+5])
+yticks(PARAM.battery.min(:,2):10:PARAM.battery.max(:,2))
 grid on
 hold on
-stairs(vect,[PARAM.battery.min*ones(384,1),PARAM.battery.max*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+stairs(vect,[PARAM.battery.min(:,2)*ones(384,1),PARAM.battery.max(:,2)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
 hold on
 yyaxis right
 stairs(vect,sol.Pchg(:,2),'-b','LineWidth',1)
 hold on 
 stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
-yticks(0:10:40)
-ylim([0 40])
+yticks(0:10:PARAM.battery.charge_rate(:,2)+10)
+ylim([0 PARAM.battery.charge_rate(:,2)+10])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 2 (SoC)','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+
+nexttile
+stairs(vect,sol.Pchg(:,1) - sol.Pchg(:,2),'-k','LineWidth',1.5)
+ylabel('P_{chg,1} - P_{chg,2} (kW)')
+grid on
+yticks(-(PARAM.battery.charge_rate(:,1)+10):10:PARAM.battery.charge_rate(:,1)+10)
+ylim([-(PARAM.battery.charge_rate(:,1)+10) PARAM.battery.charge_rate(:,1)+10])
+title('P_{chg,1} - P_{chg,2}','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+nexttile
+stairs(vect,sol.Pdchg(:,1) - sol.Pdchg(:,2),'-k','LineWidth',1.5)
+ylabel('P_{dchg,1} - P_{dchg,2} (kW)')
+grid on
+yticks(-(PARAM.battery.discharge_rate(:,1)+10):10:PARAM.battery.discharge_rate(:,1)+10)
+ylim([-(PARAM.battery.discharge_rate(:,1)+10) PARAM.battery.discharge_rate(:,1)+10])
+title('P_{dchg,1} - P_{dchg,2}','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+% fontsize(0.6,'centimeters')
+% 
+% print(f,strcat('graph/EMS1/png/battery_',filename),'-dpng')
+% print(f,strcat('graph/EMS1/eps/battery_',filename),'-deps')
+%%
+% 8 plot 2 batt only
+f = figure('PaperPosition',[0 0 21 24],'PaperOrientation','portrait','PaperUnits','centimeters');
+t = tiledlayout(4,2,'TileSpacing','tight','Padding','tight');
+
+
+nexttile
+stairs(vect,sol.soc(1:k,1),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,1)-5 PARAM.battery.max(:,1)+5])
+yticks(PARAM.battery.min(:,1):10:PARAM.battery.max(:,1))
+grid on
+hold on
+stairs(vect,[PARAM.battery.min(:,1)*ones(384,1),PARAM.battery.max(:,1)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,1),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,1),'-r','LineWidth',1)
+yticks(0:10:PARAM.battery.charge_rate(:,1)+10)
+ylim([0 PARAM.battery.charge_rate(:,1)+10])
+legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
+ylabel('Power (kW)')
+title('State of charge 1 (SoC)','FontSize',24)
+xlabel('Hour')
+xticks(start_date:hours(3):end_date)
+datetick('x','HH','keepticks')
+
+
+nexttile
+stairs(vect,sol.soc(1:k,2),'-k','LineWidth',1.5)
+ylabel('SoC (%)')
+ylim([PARAM.battery.min(:,2)-5 PARAM.battery.max(:,2)+5])
+yticks(PARAM.battery.min(:,2):10:PARAM.battery.max(:,2))
+grid on
+hold on
+stairs(vect,[PARAM.battery.min(:,2)*ones(384,1),PARAM.battery.max(:,2)*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
+hold on
+yyaxis right
+stairs(vect,sol.Pchg(:,2),'-b','LineWidth',1)
+hold on 
+stairs(vect,sol.Pdchg(:,2),'-r','LineWidth',1)
+yticks(0:10:PARAM.battery.charge_rate(:,2)+10)
+ylim([0 PARAM.battery.charge_rate(:,2)+10])
 legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
 ylabel('Power (kW)')
 title('State of charge 2 (SoC)','FontSize',24)
@@ -218,7 +299,6 @@ ylim([0 40])
 hold off
 
 nexttile
-
 stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
 ylabel('SoC (%)')
 ylim([35 75])
@@ -319,165 +399,3 @@ hold off
 % print(f,strcat('graph/EMS1/eps/6_plot_',filename),'-deps')
 
 
-%%
-%expense
-f = figure('PaperPosition',[0 0 21 20/3],'PaperOrientation','portrait','PaperUnits','centimeters');
-t = tiledlayout(1,2,'TileSpacing','tight','Padding','tight');
-
-
-% nexttile
-% stairs(vect,PARAM.PV,'-b') 
-% ylabel('Solar power (kW)','Fontsize',16)
-% grid on
-% hold on
-% yyaxis right
-% stairs(vect,PARAM.PL,'-r')
-% ylabel('Load (kW)','Fontsize',16)
-% legend('Solar','Uncontrallable load','Location','northeastoutside','Fontsize',12)
-% title('Solar and uncontrollable load power','Fontsize',16)
-% xlabel('Hour','Fontsize',16)
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-% hold off
-
-
-
-nexttile
-colororder({'r','k'})
-stairs(vect,expense,'-r')
-
-ylabel('Expense (THB)','Fontsize',16)
-ylim([0 50])
-hold on
-yyaxis right
-stairs(vect,cumsum(expense),'-k','LineWidth',1.5)
-ylabel('Cumulative expense (THB)','Fontsize',16)
-title('Cumulative expense when using EMS 1','Fontsize',16) 
-legend('Expense','Cumulative expense','Location','north','Fontsize',12) 
-grid on
-xlabel('Hour','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-ylim([0 3500])
-hold off
-
-
-
-% nexttile
-% stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
-% ylabel('SoC (%)','Fontsize',16)
-% grid on
-% hold on
-% yyaxis right
-% stairs(vect,sol.Pchg,'-r')
-% hold on 
-% stairs(vect,sol.Pdchg,'-b')
-% legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside','Fontsize',12)
-% ylabel('Power (kW)','Fontsize',16)
-% title('State of charge (SoC)','Fontsize',16)
-% xlabel('Hour','Fontsize',16)
-% xticks(start_date:hours(3):end_date)
-% datetick('x','HH','keepticks')
-
-nexttile
-
-stairs(vect,expense_noems,'-r')
-
-ylabel('Expense (THB)','Fontsize',16)
-ylim([0 50])
-hold on
-yyaxis right
-colororder({'r','k'})
-stairs(vect,cumsum(expense_noems),'-k','LineWidth',1.5)
-ylabel('Cumulative expense (THB)','Fontsize',16)
-title('Cumulative expense without EMS 1','Fontsize',16) 
-legend('Expense','Cumulative expense','Location','north','Fontsize',12) 
-grid on
-xlabel('Hour','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-ylim([0 3500])
-hold off
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS1/png/expense_',filename),'-dpng')
-print(f,strcat('graph/EMS1/eps/expense_',filename),'-deps')
-
-%%
-%battery
-f = figure('PaperPosition',[0 0 21 20/2],'PaperOrientation','portrait','PaperUnits','centimeters');
-t = tiledlayout(2,2,'TileSpacing','tight','Padding','tight');
-
-nexttile
-stairs(vect,PARAM.PV,'-b','LineWidth',1)
-ylim([0 35])
-ylabel('Solar power (kW)','Fontsize',16)
-grid on
-hold on
-yyaxis right
-stairs(vect,PARAM.PL,'-r','LineWidth',1)
-ylabel('Load (kW)','Fontsize',16)
-legend('Solar','Load','Location','northeastoutside','Fontsize',12)
-title('Solar generation and load consumption power','Fontsize',16)
-xlabel('Hour','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-hold off
-
-nexttile
-stairs(vect,excess_gen,'-k','LineWidth',1) 
-ylabel('Excess power (kW)','Fontsize',16)
-ylim([-25 25])
-hold on
-grid on
-yyaxis right 
-stairs(vect,sol.xchg,'-b','LineWidth',1)
-ylim([-1.5 1.5])
-yticks(-1:1)
-legend('Excess power','x_{chg}','Location','northeastoutside','Fontsize',12)
-title('Excess power = P_{pv} - P_{load} and Battery charge status','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-xlabel('Hour','Fontsize',16)
-
-nexttile
-stairs(vect,sol.soc(1:k),'-k','LineWidth',1.5)
-ylabel('SoC (%)')
-ylim([35 75])
-yticks(40:10:70)
-grid on
-hold on
-stairs(vect,[40*ones(384,1),70*ones(384,1)],'--m','HandleVisibility','off','LineWidth',1.2)
-hold on
-yyaxis right
-stairs(vect,sol.Pchg,'-b','LineWidth',1)
-hold on 
-stairs(vect,sol.Pdchg,'-r','LineWidth',1)
-ylim([0 80])
-yticks(0:25:100)
-legend('Soc','P_{chg}','P_{dchg}','Location','northeastoutside')
-ylabel('Power (kW)')
-title('State of charge (SoC)','FontSize',24)
-xlabel('Hour')
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-
-
-
-nexttile
-stairs(vect,excess_gen,'-k','LineWidth',1) 
-ylim([-25 25])
-ylabel('Excess power (kW)','Fontsize',16)
-hold on
-grid on
-yyaxis right 
-stairs(vect,-sol.xdchg,'-r','LineWidth',1)
-xlabel('Hour','Fontsize',16)
-ylim([-1.5 1.5])
-yticks(-1:1)
-legend('Excess power','x_{dchg}','Location','northeastoutside','Fontsize',12)
-title('Excess power = P_{pv} - P_{load} and Battery discharge status','Fontsize',16)
-xticks(start_date:hours(3):end_date)
-datetick('x','HH','keepticks')
-fontsize(0.6,'centimeters')
-print(f,strcat('graph/EMS1/png/battery_',filename),'-dpng')
-print(f,strcat('graph/EMS1/eps/battery_',filename),'-deps')

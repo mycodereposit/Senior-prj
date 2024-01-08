@@ -82,7 +82,7 @@ for i = 1:length(dataset_name)
     prob.Constraints.epicons2 = -PARAM.Resolution*PARAM.Sell_rate.*Pnet - u <= 0 ;
     
     
-     %--battery constraint
+    %--battery constraint
 
     prob.Constraints.chargeconsbatt = Pchg <= xchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.charge_rate);
     
@@ -98,7 +98,7 @@ for i = 1:length(dataset_name)
     
     %end of static constraint part
     
-   %--soc dynamic constraint 
+    %--soc dynamic constraint 
     soccons = optimconstr(k+1,PARAM.battery.num_batt);
     
     soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;

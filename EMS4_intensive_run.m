@@ -1,9 +1,6 @@
 clear; clc;
 options = optimoptions('intlinprog','MaxTime',120);
-% high load case : 2023-04-18 - 2023-04-22
-% low  load case : 2023-05-26 - 2023-05-30
-% high solar case: 2023-05-12 - 2023-05-16
-% low  solar case: 2023-04-24 - 2023-04-28
+
 dataset_detail = readtable('dataset/dataset_detail.csv');
 dataset_name = dataset_detail.name;
 %--- user-input parameter ----

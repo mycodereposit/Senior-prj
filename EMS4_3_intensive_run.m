@@ -36,14 +36,28 @@ for i = 1:length(dataset_name)
     %get schedule for AC
     
     
-    PARAM.battery.charge_effiency = 0.95; %bes charge eff
-    PARAM.battery.discharge_effiency = 0.95*0.93; %  bes discharge eff note inverter eff 0.93-0.96
-    PARAM.battery.discharge_rate = 30; % kW max discharge rate
-    PARAM.battery.charge_rate = 30; % kW max charge rate
-    PARAM.battery.actual_capacity = 125; % kWh soc_actual_capacity 
-    PARAM.battery.initial = 50; % userdefined int 0-100 %
-    PARAM.battery.min = 20; %min soc userdefined int 0-100 %
-    PARAM.battery.max = 80; %max soc userdefined int 0-100 %
+    %for 1 batt 
+    % PARAM.battery.charge_effiency = [0.95]; %bes charge eff
+    % PARAM.battery.discharge_effiency = [0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+    % PARAM.battery.discharge_rate = [60]; % kW max discharge rate
+    % PARAM.battery.charge_rate = [60]; % kW max charge rate
+    % PARAM.battery.actual_capacity = [250]; % kWh soc_capacity 
+    % PARAM.battery.initial = [50]; % userdefined int 0-100 %
+    % PARAM.battery.min = [20]; %min soc userdefined int 0-100 %
+    % PARAM.battery.max = [80]; %max soc userdefined int 0-100 %
+    %end of 1 batt
+    %for  2 batt
+    PARAM.battery.charge_effiency = [0.95 0.95]; %bes charge eff
+    PARAM.battery.discharge_effiency = [0.95*0.93 0.95*0.93]; %  bes discharge eff note inverter eff 0.93-0.96
+    PARAM.battery.discharge_rate = [30 30]; % kW max discharge rate
+    PARAM.battery.charge_rate = [30 30]; % kW max charge rate
+    PARAM.battery.actual_capacity = [125 125]; % kWh soc_capacity 
+    PARAM.battery.initial = [50 50]; % userdefined int 0-100 %
+    PARAM.battery.min = [20 20]; %min soc userdefined int 0-100 %
+    PARAM.battery.max = [80 80]; %max soc userdefined int 0-100 %
+    %end of 2 batt
+    
+    PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
     
     PARAM.battery.deviation_penalty_weight = 0.1; %max soc userdefined int 0-100 %
     PARAM.AClab.encourage_weight = 2; %(THB) weight for encourage lab ac usage
@@ -62,11 +76,11 @@ for i = 1:length(dataset_name)
     PV =     optimvar('PV',k,'LowerBound',0,'UpperBound',inf);
     u =         optimvar('u',k,'LowerBound',0,'UpperBound',inf);
     s =         optimvar('s',k,'LowerBound',0,'UpperBound',inf);
-    Pdchg =     optimvar('Pdchg',k,2,'LowerBound',0,'UpperBound',inf);
-    xdchg =     optimvar('xdchg',k,2,'LowerBound',0,'UpperBound',1,'Type','integer');
-    Pchg =      optimvar('Pchg',k,2,'LowerBound',0,'UpperBound',inf);
-    xchg =      optimvar('xchg',k,2,'LowerBound',0,'UpperBound',1,'Type','integer');
-    soc =       optimvar('soc',k+1,2,'LowerBound',PARAM.battery.min,'UpperBound',PARAM.battery.max);
+    Pdchg =     optimvar('Pdchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',inf);
+    xdchg =     optimvar('xdchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',1,'Type','integer');
+    Pchg =      optimvar('Pchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',inf);
+    xchg =      optimvar('xchg',k,PARAM.battery.num_batt,'LowerBound',0,'UpperBound',1,'Type','integer');
+    soc =       optimvar('soc',k+1,PARAM.battery.num_batt,'LowerBound',ones(k+1,PARAM.battery.num_batt).*PARAM.battery.min,'UpperBound',ones(k+1,PARAM.battery.num_batt).*PARAM.battery.max);
     Pac_lab =       optimvar('Pac_lab',k,'LowerBound',0,'UpperBound',inf);
     Pac_student =       optimvar('Pac_student',k,'LowerBound',0,'UpperBound',inf);
     Xac_lab =      optimvar('Xac_lab',k,4,'LowerBound',0,'UpperBound',1,'Type','integer');
@@ -74,8 +88,7 @@ for i = 1:length(dataset_name)
     obj_fcn =           sum(u) ...
                      - PARAM.AClab.encourage_weight*sum( PARAM.ACschedule.*sum(Xac_lab,2))... 
                      - PARAM.ACstudent.encourage_weight*sum(PARAM.ACschedule.*sum(Xac_student,2) )...
-                     + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max - soc(:,1))/(PARAM.battery.max - PARAM.battery.min))...
-                     + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max - soc(:,2))/(PARAM.battery.max - PARAM.battery.min))...
+                     + PARAM.battery.deviation_penalty_weight*sum( sum( (PARAM.battery.max.*(ones(k+1,PARAM.battery.num_batt)) - soc)./(ones(k+1,PARAM.battery.num_batt).*(PARAM.battery.max - PARAM.battery.min)),2) )...
                      + sum(s);
     prob =      optimproblem('Objective',obj_fcn);
     
@@ -105,36 +118,33 @@ for i = 1:length(dataset_name)
     prob.Constraints.PV(1:k) = PV(1:k) <= PARAM.PV(1:k);
     
     %--battery constraint
-    prob.Constraints.chargeconsbatt1 = Pchg(:,1)  <= xchg(:,1)*PARAM.battery.charge_rate;
-    prob.Constraints.chargeconsbatt2 = Pchg(:,2)  <= xchg(:,2)*PARAM.battery.charge_rate;
+
+    prob.Constraints.chargeconsbatt = Pchg <= xchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.charge_rate);
     
-    prob.Constraints.dischargeconsbatt1 = Pdchg(:,1)   <= xdchg(:,1) *PARAM.battery.discharge_rate;
-    prob.Constraints.dischargeconsbatt2 = Pdchg(:,2)   <= xdchg(:,2) *PARAM.battery.discharge_rate;
+    prob.Constraints.dischargeconsbatt = Pdchg   <= xdchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.discharge_rate);
     
-    prob.Constraints.NosimultDchgAndChgbatt1 = xchg(:,1) + xdchg(:,1) >= 0;
-    prob.Constraints.NosimultDchgAndChgbatt2 = xchg(:,2) + xdchg(:,2) >= 0;
+    prob.Constraints.NosimultDchgAndChgbatt = xchg + xdchg >= 0;
     
-    prob.Constraints.NosimultDchgAndChgconsbatt1 = xchg(:,1) + xdchg(:,1) <= 1;
-    prob.Constraints.NosimultDchgAndChgconsbatt2 = xchg(:,2) + xdchg(:,2) <= 1;
+    prob.Constraints.NosimultDchgAndChgconsbatt1 = xchg + xdchg <= 1;
     
     %------------ Pnet constraint ----------
     
-    prob.Constraints.powercons = Pnet == PV + Pdchg(:,1) + Pdchg(:,2) - PARAM.Puload - Pchg(:,1) - Pchg(:,2) - Pac_lab - Pac_student;
+    prob.Constraints.powercons = Pnet == PV + sum(Pdchg,2) - PARAM.Puload - sum(Pchg,2) - Pac_lab - Pac_student;
     
     prob.Constraints.PreservePnet = Pnet == 0;
     
     
     
-     %--soc dynamic constraint 
-    soccons = optimconstr(k+1,2);
-    soccons(1,1:2) = soc(1,1:2)  == PARAM.battery.initial ;
-    soccons(2:k+1,1) = soc(2:k+1,1)  == soc(1:k,1) + ...
-                             (PARAM.battery.charge_effiency*100*PARAM.Resolution/PARAM.battery.actual_capacity)*Pchg(1:k,1) ...
-                                - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency*PARAM.battery.actual_capacity))*Pdchg(1:k,1);
-    soccons(2:k+1,2) = soc(2:k+1,2)  == soc(1:k,2) + ...
-                             (PARAM.battery.charge_effiency*100*PARAM.Resolution/PARAM.battery.actual_capacity)*Pchg(1:k,2) ...
-                                - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency*PARAM.battery.actual_capacity))*Pdchg(1:k,2);
+    %--soc dynamic constraint 
+    soccons = optimconstr(k+1,PARAM.battery.num_batt);
     
+    soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;
+    for j = 1:PARAM.battery.num_batt
+        soccons(2:k+1,j) = soc(2:k+1,j)  == soc(1:k,j) + ...
+                                 (PARAM.battery.charge_effiency(:,j)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,j))*Pchg(1:k,j) ...
+                                    - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,j)*PARAM.battery.actual_capacity(:,j)))*Pdchg(1:k,j);
+        
+    end
     prob.Constraints.soccons = soccons;
     
     %assign constraint and solve

@@ -12,7 +12,7 @@ name = 'low_load_low_solar_9.csv';
 
 
 
-PARAM.PV.installed_capacity = 16; % (kw) PV sizing for this EMS
+PARAM.PV_capacity = 16; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
 
@@ -28,7 +28,7 @@ k = h*fs; %length of variable
 
 %get solar/load profile and buy/sell rate
 [PARAM.PV,PARAM.PL] = loadPVandPLcsv(PARAM.Resolution,name);
-PARAM.PV = PARAM.PV*2/6; %scale pv size to 16 kW
+ PARAM.PV = PARAM.PV*(PARAM.PV_capacity/48); % divide by 8 kW * 6 (scaling factor) = 48 
 
 
 %parameter part
@@ -76,8 +76,7 @@ Xac_student =      optimvar('Xac_student',k,4,'LowerBound',0,'UpperBound',1,'Typ
 obj_fcn =           sum(u) ...
                  - PARAM.AClab.encourage_weight*sum( PARAM.ACschedule.*sum(Xac_lab,2))... 
                  - PARAM.ACstudent.encourage_weight*sum(PARAM.ACschedule.*sum(Xac_student,2) )...
-                 + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max - soc(:,1))/(PARAM.battery.max - PARAM.battery.min))...
-                 + PARAM.battery.deviation_penalty_weight*sum((PARAM.battery.max - soc(:,2))/(PARAM.battery.max - PARAM.battery.min))...
+                 + PARAM.battery.deviation_penalty_weight*sum( sum( (PARAM.battery.max.*(ones(k+1,PARAM.battery.num_batt)) - soc)./(ones(k+1,PARAM.battery.num_batt).*(PARAM.battery.max - PARAM.battery.min)),2) )...
                  + sum(s);
 prob =      optimproblem('Objective',obj_fcn);
 %prob =      optimproblem('Objective',sum(u + v - (ACschedule*lambda_lab).*sum(Xac_lab,2) - (ACschedule*lambda_student).*sum(Xac_student,2) ));
@@ -108,36 +107,33 @@ prob.Constraints.PV = optimconstr(k);
 prob.Constraints.PV(1:k) = PV(1:k) <= PARAM.PV(1:k);
 
 %--battery constraint
-prob.Constraints.chargeconsbatt1 = Pchg(:,1)  <= xchg(:,1)*PARAM.battery.charge_rate;
-prob.Constraints.chargeconsbatt2 = Pchg(:,2)  <= xchg(:,2)*PARAM.battery.charge_rate;
 
-prob.Constraints.dischargeconsbatt1 = Pdchg(:,1)   <= xdchg(:,1) *PARAM.battery.discharge_rate;
-prob.Constraints.dischargeconsbatt2 = Pdchg(:,2)   <= xdchg(:,2) *PARAM.battery.discharge_rate;
+prob.Constraints.chargeconsbatt = Pchg <= xchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.charge_rate);
 
-prob.Constraints.NosimultDchgAndChgbatt1 = xchg(:,1) + xdchg(:,1) >= 0;
-prob.Constraints.NosimultDchgAndChgbatt2 = xchg(:,2) + xdchg(:,2) >= 0;
+prob.Constraints.dischargeconsbatt = Pdchg   <= xdchg.*(ones(k,PARAM.battery.num_batt).*PARAM.battery.discharge_rate);
 
-prob.Constraints.NosimultDchgAndChgconsbatt1 = xchg(:,1) + xdchg(:,1) <= 1;
-prob.Constraints.NosimultDchgAndChgconsbatt2 = xchg(:,2) + xdchg(:,2) <= 1;
+prob.Constraints.NosimultDchgAndChgbatt = xchg + xdchg >= 0;
+
+prob.Constraints.NosimultDchgAndChgconsbatt1 = xchg + xdchg <= 1;
 
 %------------ Pnet constraint ----------
 
-prob.Constraints.powercons = Pnet == PV + Pdchg(:,1) + Pdchg(:,2) - PARAM.Puload - Pchg(:,1) - Pchg(:,2) - Pac_lab - Pac_student;
+prob.Constraints.powercons = Pnet == PV + sum(Pdchg,2) - PARAM.Puload - sum(Pchg,2) - Pac_lab - Pac_student;
 
 prob.Constraints.PreservePnet = Pnet == 0;
 
 
 
- %--soc dynamic constraint 
-soccons = optimconstr(k+1,2);
-soccons(1,1:2) = soc(1,1:2)  == PARAM.battery.initial ;
-soccons(2:k+1,1) = soc(2:k+1,1)  == soc(1:k,1) + ...
-                         (PARAM.battery.charge_effiency*100*PARAM.Resolution/PARAM.battery.actual_capacity)*Pchg(1:k,1) ...
-                            - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency*PARAM.battery.actual_capacity))*Pdchg(1:k,1);
-soccons(2:k+1,2) = soc(2:k+1,2)  == soc(1:k,2) + ...
-                         (PARAM.battery.charge_effiency*100*PARAM.Resolution/PARAM.battery.actual_capacity)*Pchg(1:k,2) ...
-                            - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency*PARAM.battery.actual_capacity))*Pdchg(1:k,2);
+%--soc dynamic constraint 
+soccons = optimconstr(k+1,PARAM.battery.num_batt);
 
+soccons(1,1:PARAM.battery.num_batt) = soc(1,1:PARAM.battery.num_batt)  == PARAM.battery.initial ;
+for j = 1:PARAM.battery.num_batt
+    soccons(2:k+1,j) = soc(2:k+1,j)  == soc(1:k,j) + ...
+                             (PARAM.battery.charge_effiency(:,j)*100*PARAM.Resolution/PARAM.battery.actual_capacity(:,j))*Pchg(1:k,j) ...
+                                - (PARAM.Resolution*100/(PARAM.battery.discharge_effiency(:,j)*PARAM.battery.actual_capacity(:,j)))*Pdchg(1:k,j);
+    
+end
 prob.Constraints.soccons = soccons;
 
 %assign constraint and solve
