@@ -17,5 +17,5 @@ for i = 1:length(dataset_name)
     networth_2batt_smart(i,1) = sum(-sol_smart_2batt.u);
 end
 %%
-th_diff = any(networth_1batt_thcurrent - networth_2batt_thcurrent <= 1e-2); % 1 mean no different
-smart_diff = any(networth_1batt_thcurrent - networth_2batt_thcurrent <= 1e-2);
+th_diff = all(networth_1batt_thcurrent - networth_2batt_thcurrent <= 1e-2); % 1 mean no different
+smart_diff = all(networth_1batt_smart - networth_2batt_smart <= 1e-2);
