@@ -1,4 +1,6 @@
 clear; clc;
+options = optimoptions('intlinprog','MaxTime',40);
+
 
 %--- user-input parameter ----
 PARAM.Horizon = 4;  % horizon to optimize (day)
@@ -7,7 +9,7 @@ PARAM.Resolution = 15; %sampling period(min) use multiple of 15. int
 PARAM.TOU_CHOICE = 'smart1' ; % choice for tou 
 %TOU_CHOICE = 'nosell' ;
 %TOU_CHOICE = 'THcurrent' ;
-PARAM.PV_capacity = 16; % (kw) PV sizing for this EMS
+PARAM.PV_capacity = 50; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
 name = 'high_load_low_solar_1'; 
@@ -19,9 +21,9 @@ PARAM.Resolution = PARAM.Resolution/60; %sampling period(Hr)
 % %get solar/load profile and buy/sell rate
 
 [PARAM.PV,PARAM.PL] = loadPVandPLcsv(PARAM.Resolution,name,PARAM.PV_capacity);
+[PARAM.Buy_rate,PARAM.Sell_rate] = getBuySellrate(1/PARAM.Resolution,PARAM.Horizon,PARAM.TOU_CHOICE);
 
 %end of solar/load profile and buy/sell rate
-%parameter part
 
 %parameter part
 %for  2 batt
@@ -34,19 +36,15 @@ PARAM.battery.initial = [50 50]; % userdefined int 0-100 %
 PARAM.battery.min = [20 20]; %min soc userdefined int 0-100 %
 PARAM.battery.max = [80 80]; %max soc userdefined int 0-100 %
 %end of 2 batt
-PARAM.battery.deviation_penalty_weight = 0.05; 
-PARAM.AClab.encourage_weight = 5; %(THB) weight for encourage lab ac usage
-PARAM.ACstudent.encourage_weight = 2; %(THB) weight for encourage student ac usage
-PARAM.AClab.Paclab_rate = 3.71*3; % (kw) air conditioner input Power for lab
-PARAM.ACstudent.Pacstudent_rate = 1.49*2 + 1.82*2; % (kw) air conditioner input Power for lab
-PARAM.Puload = min(PARAM.PL) ;% (kW) power of uncontrollable load
+
 PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
 
 % end of parameter part
 %%
 solution_path = 'solution';
-sol = EMS4_opt(PARAM,name,1,solution_path);
+sol = EMS2_opt(PARAM,name,1,solution_path);
 
 %%
 graph_path = 'graph';
-[f,t] = EMS4_plot(sol,0,graph_path);
+[f,t] = EMS2_plot(sol,1,graph_path);
+

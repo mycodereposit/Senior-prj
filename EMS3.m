@@ -19,6 +19,7 @@ PARAM.Resolution = PARAM.Resolution/60; %sampling period(Hr)
 % %get solar/load profile and buy/sell rate
 
 [PARAM.PV,PARAM.PL] = loadPVandPLcsv(PARAM.Resolution,name,PARAM.PV_capacity);
+[PARAM.Buy_rate,PARAM.Sell_rate] = getBuySellrate(1/PARAM.Resolution,PARAM.Horizon,PARAM.TOU_CHOICE);
 
 %end of solar/load profile and buy/sell rate
 %parameter part
@@ -43,10 +44,15 @@ PARAM.Puload = min(PARAM.PL) ;% (kW) power of uncontrollable load
 PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
 
 % end of parameter part
+
+
+
 %%
 solution_path = 'solution';
-sol = EMS4_opt(PARAM,name,1,solution_path);
+sol = EMS3_opt(PARAM,name,1,solution_path);
 
 %%
 graph_path = 'graph';
-[f,t] = EMS4_plot(sol,0,graph_path);
+[f,t] = EMS3_plot(sol,1,graph_path);
+%%
+
