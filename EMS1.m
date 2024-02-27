@@ -12,7 +12,7 @@ PARAM.TOU_CHOICE = 'smart1' ; % choice for tou
 PARAM.PV_capacity = 50; % (kw) PV sizing for this EMS
 %end of ----- parameter ----
 
-name = 'high_load_low_solar_1'; 
+name = 'high_solar low_load_1'; 
 
 
 %change unit
@@ -42,9 +42,9 @@ PARAM.battery.num_batt = length(PARAM.battery.actual_capacity);
 % end of parameter part
 %%
 solution_path = 'solution';
-sol = EMS1_opt(PARAM,name,1,solution_path);
+sol = EMS1_opt(PARAM,name,0,solution_path);
 
 %%
 graph_path = 'graph';
-[f,t] = EMS1_plot(sol,1,graph_path);
+[f,t] = EMS1_plot(sol,0,graph_path);
 
