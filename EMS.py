@@ -167,7 +167,6 @@ def EMS_2_opt(PARAM):
 
 def EMS_1_plot(PARAM,sol) :
         
-
     fig,ax = plt.subplots(4,2,figsize=(20,20))
 
     excess_gen = PARAM['PV'] - PARAM['PL']
@@ -194,6 +193,24 @@ def EMS_1_plot(PARAM,sol) :
     lines_left,labels_left =  ax[0,0].get_legend_handles_labels()
     lines_right,labels_right =  ax00r.get_legend_handles_labels()
     ax[0,0].legend(lines_left + lines_right,labels_left + labels_right,loc=0)
+
+
+    #cell (0,1)
+    ax[0,1].step(date,sol['soc_2'],'-k',label='SoC')
+    ax[0,1].set_ylabel('SoC (%)')
+    ax[0,1].set_ylim([PARAM['battery']['min'][1] - 5,PARAM['battery']['max'][1] + 5])
+    ax[0,1].set_title('Battery 2 charge/discharge status and SoC')
+    ax[0,1].plot(date,PARAM['battery']['min'][1]*np.ones(384,),'--m')
+    ax[0,1].plot(date,PARAM['battery']['max'][1]*np.ones(384,),'--m')
+    ax01r = ax[0,1].twinx()
+    ax01r.step(date,sol['Pchg_2'],'-b',label = 'Pchg')
+    ax01r.step(date,sol['Pdchg_2'],'-r',label = 'Pdchg')
+    ax01r.set_ylabel('Power (kW)')
+    ax01r.set_ylim([0,PARAM['battery']['discharge_rate'][1]+5])
+    lines_left,labels_left =  ax[0,1].get_legend_handles_labels()
+    lines_right,labels_right =  ax01r.get_legend_handles_labels()
+    ax[0,1].legend(lines_left + lines_right,labels_left + labels_right,loc=0)
+
 
     # cell (1,0)
     ax[1,0].step(date,PARAM['PV'],label='Solar')
@@ -278,4 +295,5 @@ def EMS_1_plot(PARAM,sol) :
             #ax[i,j].legend()
             ax[i,j].grid()
             ax[i,j].set_xlim([start_date,end_date])
-    return        
+    return
+        
